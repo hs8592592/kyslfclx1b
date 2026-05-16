@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>跨越丝路分层习题生成器 · 1B</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f5f0;
+  --card: #ffffff;
+  --text: #1a1714;
+  --muted: #7a7570;
+  --border: #e2ded8;
+  --t1: #d4622a; --t1l: #fdf0ea; --t1m: #f5a07a;
+  --t2: #2a6fd4; --t2l: #eaf0fd; --t2m: #7aaaf5;
+  --t3: #1f8c5a; --t3l: #e8f7f0; --t3m: #6fcba0;
+  --correct: #1f8c5a; --correctbg: #e8f7f0;
+  --wrong: #c0392b; --wrongbg: #fdecea;
+  --gold: #c9a227;
+  --radius: 14px;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); min-height: 100vh; }
+
+/* ─── SETUP SCREEN ─── */
+.setup { max-width: 780px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+.brand-icon { width: 40px; height: 40px; background: var(--text); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 600; }
+.brand h1 { font-size: 17px; font-weight: 600; line-height: 1.2; }
+.brand p { font-size: 12px; color: var(--muted); }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+.lesson-card { border: 1.5px solid var(--border); border-radius: 10px; background: var(--card); padding: 10px 12px; cursor: pointer; transition: all .15s; }
+.lesson-card:hover { border-color: #aaa; }
+.lesson-card.active { border-color: var(--text); box-shadow: 0 0 0 3px rgba(26,23,20,.08); }
+.lesson-card .lc-num { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.lesson-card .lc-title { font-size: 13px; font-weight: 500; line-height: 1.3; }
+.lesson-card .lc-cn { font-size: 11px; color: var(--muted); font-family: 'Noto Serif SC', serif; }
+.tier-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1.75rem; }
+.tier-card { border: 1.5px solid var(--border); border-radius: 12px; background: var(--card); padding: 14px; cursor: pointer; transition: all .15s; }
+.tier-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.tier-card.t1.active { border-color: var(--t1); background: var(--t1l); }
+.tier-card.t2.active { border-color: var(--t2); background: var(--t2l); }
+.tier-card.t3.active { border-color: var(--t3); background: var(--t3l); }
+.tier-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.t1 .tier-dot { background: var(--t1); } .t2 .tier-dot { background: var(--t2); } .t3 .tier-dot { background: var(--t3); }
+.tier-card .tc-level { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; }
+.tier-card.t1.active .tc-level { color: var(--t1); } .tier-card.t2.active .tc-level { color: var(--t2); } .tier-card.t3.active .tc-level { color: var(--t3); }
+.tier-card .tc-cn { font-size: 16px; font-weight: 600; font-family: 'Noto Serif SC', serif; margin-bottom: 4px; }
+.tier-card .tc-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.start-btn { width: 100%; padding: 16px; background: var(--text); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity .15s; }
+.start-btn:hover { opacity: .88; }
+.start-btn .sb-cn { font-family: 'Noto Serif SC', serif; font-size: 15px; }
+
+/* ─── QUIZ SCREEN ─── */
+.quiz { display: none; max-width: 680px; margin: 0 auto; padding: 1.5rem; }
+.quiz-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.tier-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.tb-t1 { background: var(--t1l); color: var(--t1); } .tb-t2 { background: var(--t2l); color: var(--t2); } .tb-t3 { background: var(--t3l); color: var(--t3); }
+.q-counter { font-size: 13px; color: var(--muted); }
+.timer-wrap { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.timer-wrap svg { width: 16px; height: 16px; }
+.timer-warn { color: #c9a227; } .timer-urgent { color: var(--wrong); }
+.exit-btn { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: none; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+.exit-btn:hover { border-color: var(--wrong); color: var(--wrong); background: var(--wrongbg); }
+.progress { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+.pf-t1 { background: var(--t1); } .pf-t2 { background: var(--t2); } .pf-t3 { background: var(--t3); }
+
+/* question card */
+.q-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
+.q-type-tag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+.q-stem { font-size: 18px; font-weight: 500; line-height: 1.55; margin-bottom: 6px; }
+.q-stem .cn { font-family: 'Noto Serif SC', serif; }
+.q-hint { font-size: 12px; color: var(--muted); padding: 8px 12px; background: var(--bg); border-radius: 8px; border-left: 3px solid var(--border); margin-top: 10px; margin-bottom: 16px; }
+
+/* MC options */
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.opt-btn { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 13px 14px; cursor: pointer; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); text-align: left; display: flex; align-items: flex-start; gap: 10px; transition: all .12s; line-height: 1.4; }
+.opt-btn:hover:not(:disabled) { border-color: #999; background: var(--card); }
+.opt-btn:disabled { cursor: default; }
+.opt-btn.correct { background: var(--correctbg); border-color: var(--correct); color: var(--correct); }
+.opt-btn.wrong { background: var(--wrongbg); border-color: var(--wrong); color: var(--wrong); }
+.opt-key { width: 24px; height: 24px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--muted); }
+.opt-btn.correct .opt-key { background: var(--correct); border-color: var(--correct); color: #fff; }
+.opt-btn.wrong .opt-key { background: var(--wrong); border-color: var(--wrong); color: #fff; }
+.opt-text { font-family: 'Noto Serif SC', serif; font-size: 15px; }
+
+/* fill-in */
+.fill-wrap { display: flex; gap: 8px; flex-direction: column; }
+.fill-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 13px 14px; font-size: 16px; font-family: 'Noto Serif SC', serif; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
+.fill-input:focus { border-color: #999; background: var(--card); }
+.fill-input.correct { border-color: var(--correct); background: var(--correctbg); color: var(--correct); }
+.fill-input.wrong { border-color: var(--wrong); background: var(--wrongbg); color: var(--wrong); }
+.submit-btn { padding: 11px 20px; background: var(--text); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity .15s; align-self: flex-start; }
+.submit-btn:hover { opacity: .85; }
+
+/* match */
+.match-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.match-col-label { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+.match-col { display: flex; flex-direction: column; gap: 7px; }
+.match-item { padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; background: var(--bg); color: var(--text); font-family: 'Noto Serif SC', serif; text-align: center; transition: all .12s; }
+.match-item:hover:not(.matched):not(.wrong-match) { border-color: #999; background: var(--card); }
+.match-item.selected { border-color: var(--t2); background: var(--t2l); color: var(--t2); }
+.match-item.matched { border-color: var(--correct); background: var(--correctbg); color: var(--correct); cursor: default; }
+.match-item.wrong-match { border-color: var(--wrong); background: var(--wrongbg); color: var(--wrong); }
+.match-item.paired-left, .match-item.paired-right { border-color: var(--t2); background: var(--t2l); color: var(--t2); }
+.match-check-btn { margin-top: 10px; padding: 10px 18px; background: var(--text); color: #fff; border: none; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* ─── READING PASSAGE ─── */
+.reading-passage {
+  background: var(--t3l);
+  border: 1.5px solid var(--t3m);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  font-family: 'Noto Serif SC', serif;
+  color: var(--text);
+  line-height: 1;
+}
+.reading-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--t3);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reading-label::before { content: '📖'; font-size: 13px; }
+
+/* Word-block pinyin layout */
+.passage-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0;
+  row-gap: 10px;
+}
+/* Each word or punctuation unit */
+.w {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 1px;
+  vertical-align: bottom;
+}
+.w .py {
+  font-size: 11px;
+  color: var(--t3);
+  font-style: italic;
+  line-height: 1.3;
+  white-space: nowrap;
+  min-height: 15px;
+}
+.w .ch {
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+/* Punctuation — no pinyin space needed */
+.w.punct .py { min-height: 0; font-size: 0; }
+.w.punct .ch { font-size: 16px; margin-left: -2px; }
+/* Sentence break = small gap */
+.w.brk { width: 100%; height: 0; }
+
+/* No-pinyin mode: hide py row, tighten layout */
+.passage-nopinyin .w .py { display: none; }
+.passage-nopinyin .passage-body { row-gap: 4px; }
+.passage-nopinyin .w .ch { font-size: 16px; line-height: 1.8; }
+
+/* ─── HOTS (Critical/Creative Thinking) ─── */
+.hots-box {
+  background: linear-gradient(135deg, #fdf8e8, #f9f0fb);
+  border: 1.5px solid var(--gold);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.hots-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--gold);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hots-label::before { content: '💭'; font-size: 13px; }
+.hots-prompts {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.hots-prompt {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 7px 11px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 7px;
+  border-left: 3px solid var(--gold);
+  line-height: 1.5;
+}
+.hots-open-input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: 15px;
+  font-family: 'Noto Serif SC', serif;
+  background: rgba(255,255,255,0.8);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color .15s;
+  margin-top: 12px;
+}
+.hots-open-input:focus { border-color: var(--gold); }
+.hots-submit-btn {
+  margin-top: 8px;
+  padding: 10px 20px;
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.hots-submitted {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--correctbg);
+  color: var(--correct);
+  border-radius: 9px;
+  font-size: 13px;
+  display: none;
+}
+
+/* feedback */
+.feedback { margin-top: 10px; padding: 10px 14px; border-radius: 9px; font-size: 13px; display: none; }
+.feedback.show { display: block; }
+.feedback.ok { background: var(--correctbg); color: var(--correct); }
+.feedback.bad { background: var(--wrongbg); color: var(--wrong); }
+
+.next-btn { display: none; width: 100%; padding: 13px; background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--text); margin-top: 10px; transition: all .12s; }
+.next-btn:hover { border-color: var(--text); }
+
+/* ─── HINT (hidden by default, click to reveal) ─── */
+.hint-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; cursor: pointer; margin-top: 8px; margin-bottom: 12px; transition: all .15s; user-select: none; }
+.hint-toggle:hover { border-color: #aaa; color: var(--text); }
+.hint-toggle .ht-arrow { font-size: 10px; transition: transform .2s; }
+.hint-toggle.open .ht-arrow { transform: rotate(180deg); }
+.hint-body { display: none; font-size: 12px; color: var(--muted); padding: 8px 12px; background: var(--bg); border-radius: 8px; border-left: 3px solid var(--border); margin-bottom: 12px; line-height: 1.5; }
+.hint-body.show { display: block; }
+
+/* ─── PINYIN TOGGLE (reading passages) ─── */
+.pinyin-toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.pinyin-toggle-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.pinyin-switch { position: relative; display: inline-block; width: 38px; height: 22px; }
+.pinyin-switch input { opacity: 0; width: 0; height: 0; }
+.pinyin-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border); border-radius: 22px; transition: .2s; }
+.pinyin-slider:before { position: absolute; content: ''; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+.pinyin-switch input:checked + .pinyin-slider { background: var(--t3); }
+.pinyin-switch input:checked + .pinyin-slider:before { transform: translateX(16px); }
+
+/* ─── RESULT SCREEN ─── */
+.result { display: none; max-width: 620px; margin: 0 auto; padding: 2rem 1.5rem; text-align: center; }
+.result-ring { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 36px; font-weight: 700; }
+.ring-t1 { background: var(--t1l); color: var(--t1); border: 3px solid var(--t1m); }
+.ring-t2 { background: var(--t2l); color: var(--t2); border: 3px solid var(--t2m); }
+.ring-t3 { background: var(--t3l); color: var(--t3); border: 3px solid var(--t3m); }
+.result h2 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.result .r-sub { font-size: 14px; color: var(--muted); margin-bottom: 1.5rem; }
+.stars { font-size: 30px; margin-bottom: 1rem; letter-spacing: 4px; }
+.result-msg { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; font-size: 14px; text-align: left; line-height: 1.7; margin-bottom: 1.25rem; color: var(--text); }
+.result-msg strong { font-weight: 600; }
+.result-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.btn-retry { padding: 12px 28px; background: var(--text); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.btn-back { padding: 12px 28px; background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--text); }
+.btn-review { padding: 12px 28px; background: var(--t3l); border: 1.5px solid var(--t3m); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--t3); }
+.btn-download { padding: 12px 28px; background: var(--t2l); border: 1.5px solid var(--t2m); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--t2); }
+.btn-print { padding: 12px 28px; background: #f3e8ff; border: 1.5px solid #c4b5fd; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: #6d28d9; }
+.btn-print:hover { opacity: .88; }
+
+/* ─── ANSWER REVIEW PANEL ─── */
+.review-panel { display: none; text-align: left; margin-top: 1rem; }
+.review-panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+.review-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; }
+.review-item .ri-q { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.review-item .ri-stem { font-size: 14px; margin-bottom: 6px; }
+.review-item .ri-answer { display: flex; gap: 10px; flex-wrap: wrap; }
+.ri-tag { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.ri-correct { background: var(--correctbg); color: var(--correct); }
+.ri-wrong { background: var(--wrongbg); color: var(--wrong); }
+.ri-open { background: var(--t3l); color: var(--t3); }
+.ri-user { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+
+/* ─── MOBILE DROPDOWNS (hidden on desktop) ─── */
+.mobile-select-wrap { display: none; }
+
+/* ─── STUDENT INFO SCREEN ─── */
+.student-info-screen { display: none; max-width: 580px; margin: 0 auto; padding: 3rem 1.5rem; }
+.si-card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 2rem 2rem 1.75rem; }
+.si-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.si-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 1.75rem; }
+.si-field { margin-bottom: 1rem; }
+.si-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; display: block; }
+.si-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
+.si-input:focus { border-color: var(--text); background: var(--card); }
+.si-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .si-row { grid-template-columns: 1fr; } }
+.si-note { font-size: 12px; color: var(--muted); margin-top: 0.75rem; line-height: 1.5; padding: 10px 12px; background: var(--bg); border-radius: 8px; }
+.si-start-btn { width: 100%; margin-top: 1.5rem; padding: 16px; background: var(--text); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity .15s; }
+.si-start-btn:hover { opacity: .88; }
+.si-back-link { text-align: center; margin-top: 1rem; font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; }
+.si-back-link:hover { color: var(--text); }
+
+/* ─── SOUND TOGGLE ─── */
+.sound-toggle-wrap { position: fixed; top: 14px; right: 16px; z-index: 999; }
+.sound-toggle-btn { background: var(--card); border: 1.5px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--muted); transition: all .15s; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow); }
+.sound-toggle-btn:hover { border-color: #aaa; color: var(--text); }
+
+/* ─── ANALYTICS PANEL (replaces review-panel) ─── */
+.analytics-panel { text-align: left; margin-top: 1.5rem; }
+.analytics-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.analytics-section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 1rem; display: flex; align-items: center; gap: 7px; }
+.analytics-q-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.analytics-q-row:last-child { border-bottom: none; }
+.analytics-q-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.aq-correct { background: var(--correctbg); color: var(--correct); }
+.aq-wrong { background: var(--wrongbg); color: var(--wrong); }
+.aq-open { background: var(--t3l); color: var(--t3); }
+.analytics-q-body { flex: 1; }
+.analytics-q-num { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.analytics-q-stem { font-size: 14px; line-height: 1.5; margin-bottom: 4px; }
+.analytics-q-ans { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.aq-tag { padding: 2px 9px; border-radius: 20px; font-weight: 600; }
+.aq-right-tag { background: var(--correctbg); color: var(--correct); }
+.aq-wrong-tag { background: var(--wrongbg); color: var(--wrong); }
+.aq-user-tag { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.strength-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.strength-label { font-size: 13px; min-width: 90px; color: var(--text); }
+.strength-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.strength-fill-correct { height: 100%; background: var(--correct); border-radius: 5px; }
+.strength-fill-wrong { height: 100%; background: var(--wrong); border-radius: 5px; }
+.analytics-insight { font-size: 13px; line-height: 1.7; color: var(--text); }
+.analytics-insight strong { color: var(--t1); }
+.remedial-q { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+.remedial-q-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--t1); margin-bottom: 6px; }
+.remedial-q-stem { font-size: 15px; font-family: 'Noto Serif SC', serif; line-height: 1.5; margin-bottom: 10px; }
+.remedial-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+@media (max-width: 500px) { .remedial-choices { grid-template-columns: 1fr; } }
+.remedial-choice { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'Noto Serif SC', serif; background: var(--card); cursor: pointer; display: flex; gap: 8px; transition: all .12s; }
+.remedial-choice:hover { border-color: #999; }
+.remedial-choice.rc-correct { background: var(--correctbg); border-color: var(--correct); color: var(--correct); }
+.remedial-choice.rc-wrong { background: var(--wrongbg); border-color: var(--wrong); color: var(--wrong); }
+.remedial-choice:disabled { cursor: default; }
+.btn-download-remedial { padding: 12px 28px; background: #fff7e6; border: 1.5px solid var(--gold); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; color: #92700a; }
+.btn-download-remedial:hover { opacity: .88; }
+
+/* ─── STUDENT SURVEY (result page bottom) ─── */
+.student-survey { max-width: 860px; margin: 2rem auto 0; padding: 0 1.5rem 3rem; }
+.survey-card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.75rem 2rem; }
+.survey-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+.survey-icon { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg,var(--t2) 0%,var(--t3) 100%); display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+.survey-title { font-size: 16px; font-weight: 600; }
+.survey-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.survey-divider { border: none; border-top: 1.5px solid var(--border); margin: 1rem 0; }
+.survey-q { margin-bottom: 1.25rem; }
+.survey-q-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: flex; gap: 5px; }
+.survey-required { color: var(--wrong); }
+.survey-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.survey-option { padding: 7px 15px; border: 1.5px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; background: var(--bg); color: var(--text); transition: all .12s; user-select: none; }
+.survey-option:hover { border-color: #aaa; }
+.survey-option.selected { border-color: var(--t2); background: var(--t2l); color: var(--t2); font-weight: 600; }
+.survey-option.multi.selected { border-color: var(--t3); background: var(--t3l); color: var(--t3); font-weight: 600; }
+.survey-scale { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.survey-scale-label { font-size: 11px; color: var(--muted); }
+.survey-scale-btn { width: 38px; height: 38px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; transition: all .12s; }
+.survey-scale-btn:hover { border-color: #aaa; }
+.survey-scale-btn.selected { border-color: var(--t2); background: var(--t2); color: #fff; }
+.survey-textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); outline: none; resize: vertical; min-height: 80px; transition: border-color .15s; }
+.survey-textarea:focus { border-color: #999; background: var(--card); }
+.survey-submit-btn { width: 100%; padding: 14px; background: var(--t2); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-top: 0.5rem; transition: opacity .15s; }
+.survey-submit-btn:hover { opacity: .88; }
+.survey-toggle-arrow { font-size: 14px; color: var(--muted); transition: transform .25s; flex-shrink: 0; margin-left: 4px; }
+.survey-toggle-header:hover .survey-title { color: var(--t2); }
+.survey-toggle-header { border-radius: 8px; padding: 4px; margin: -4px; transition: background .12s; }
+.survey-toggle-header:hover { background: var(--bg); }
+.survey-thanks { display: none; text-align: center; padding: 1.5rem 0 0.5rem; font-size: 15px; font-weight: 600; color: var(--correct); font-family: 'Noto Serif SC', serif; }
+.survey-thanks span { display: block; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 4px; }
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 600px) {
+  .setup { padding: 1.25rem 1rem; }
+  .brand h1 { font-size: 14px; }
+  .brand p { font-size: 11px; }
+  .lesson-grid { display: none; }
+  .tier-grid { display: none; }
+  .mobile-select-wrap { display: block; margin-bottom: 1.25rem; }
+  .mobile-select {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--card);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a7570' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    cursor: pointer;
+  }
+  .mobile-select:focus { border-color: #999; }
+  .tier-grid { grid-template-columns: 1fr; gap: 8px; }
+  .tier-card { padding: 12px; }
+  .tier-card .tc-cn { font-size: 14px; }
+  .tier-card .tc-desc { font-size: 11px; }
+  .quiz { padding: 1rem 0.875rem; }
+  .quiz-header { flex-wrap: wrap; gap: 6px; }
+  .q-counter { flex: 1; text-align: center; }
+  .timer-wrap { font-size: 13px; }
+  .q-card { padding: 1rem; }
+  .q-stem { font-size: 16px; }
+  .options-grid { grid-template-columns: 1fr; }
+  .opt-btn { font-size: 13px; padding: 11px 12px; }
+  .opt-text { font-size: 14px; }
+  .match-wrap { grid-template-columns: 1fr; gap: 8px; }
+  .match-item { font-size: 13px; padding: 9px 11px; }
+  .fill-input { font-size: 15px; }
+  .reading-passage { padding: 12px 14px; }
+  .w .ch { font-size: 15px; }
+  .w .py { font-size: 10px; }
+  .result { padding: 1.25rem 1rem; }
+  .result-btns { flex-direction: column; align-items: stretch; gap: 8px; }
+  .result-btns button { width: 100%; text-align: center; }
+  .result h2 { font-size: 19px; }
+  .result-ring { width: 90px; height: 90px; font-size: 28px; }
+  .feedback-card { padding: 1.25rem 1rem 1rem; }
+  .feedback-bottom { flex-direction: column; align-items: stretch; }
+  .feedback-submit { width: 100%; text-align: center; padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SETUP ═══════════════ -->
+<div class="setup" id="setup">
+  <div class="brand">
+    <div class="brand-icon">跨</div>
+    <div>
+      <h1>跨越丝路分层习题生成器 · 1B</h1>
+      <p>Across the Silk Route · Book 1B · All 6 Lessons · Based on CCG &amp; HSK 3.0 (HSK 1–2)</p>
+    </div>
+  </div>
+  <div class="section-label">1 · Select lesson 选择课时</div>
+  <div class="lesson-grid" id="lessonGrid"></div>
+  <div class="mobile-select-wrap" id="lessonSelectWrap">
+    <select class="mobile-select" id="lessonSelect" onchange="selectLesson(parseInt(this.value))">
+      <option value="0">Lesson 1 · 她是我妹妹。(Family Members)</option>
+      <option value="1">Lesson 2 · 我有两个哥哥。(Family)</option>
+      <option value="2">Lesson 3 · 我爱我家。(Self-Introduction)</option>
+      <option value="3">Lesson 4 · 现在几点？(Time)</option>
+      <option value="4">Lesson 5 · 今天二月一号。(Date)</option>
+      <option value="5">Lesson 6 · 祝你生日快乐！(Birthday)</option>
+    </select>
+  </div>
+  <div class="section-label">2 · Select mastery tier 选择分层</div>
+  <div class="mobile-select-wrap" id="tierSelectWrap">
+    <select class="mobile-select" id="tierSelect" onchange="setTier(parseInt(this.value))">
+      <option value="0">Tier 1 · 迈向掌握 — Core vocabulary &amp; sentence patterns</option>
+      <option value="1">Tier 2 · 达到掌握 — Sentence usage + HSK 1–2 grammar</option>
+      <option value="2">Tier 3 · 深度掌握 — Extended + reading + critical thinking</option>
+    </select>
+  </div>
+  <div class="tier-grid">
+    <div class="tier-card t1 active" id="tc0" onclick="setTier(0)">
+      <div class="tc-level"><span class="tier-dot"></span>Tier 1</div>
+      <div class="tc-cn">迈向掌握</div>
+      <div class="tc-desc">10 questions · Core vocabulary &amp; sentence patterns · Working toward mastery</div>
+    </div>
+    <div class="tier-card t2" id="tc1" onclick="setTier(1)">
+      <div class="tc-level"><span class="tier-dot"></span>Tier 2</div>
+      <div class="tc-cn">达到掌握</div>
+      <div class="tc-desc">10 questions · Sentence usage + HSK 1–2 grammar · Working at mastery</div>
+    </div>
+    <div class="tier-card t3" id="tc2" onclick="setTier(2)">
+      <div class="tc-level"><span class="tier-dot"></span>Tier 3</div>
+      <div class="tc-cn">深度掌握</div>
+      <div class="tc-desc">10 questions · 5 extended + 4 reading comprehension + 1 critical thinking · Mastery with depth</div>
+    </div>
+  </div>
+  <button class="start-btn" onclick="goToStudentInfo()">
+    <span class="sb-cn">开始练习</span> · Start Quiz →
+  </button>
+
+  <p style="text-align:right; margin-top:1.5rem; font-size:11px; color:var(--muted); font-family:'DM Sans',sans-serif; opacity:0.7;">Designed by Sun Hao</p>
+
+</div>
+
+<!-- ═══════════════ SOUND TOGGLE (fixed, always visible during quiz) ═══════════════ -->
+<div class="sound-toggle-wrap" id="soundToggleWrap" style="display:none;">
+  <button class="sound-toggle-btn" onclick="toggleSound()" id="soundBtn">🔊 Sound ON</button>
+</div>
+
+<!-- ═══════════════ STUDENT INFO SCREEN ═══════════════ -->
+<div class="student-info-screen" id="studentInfoScreen">
+  <div class="si-card">
+    <div class="si-title">🎒 学生信息 · Student Info</div>
+    <div class="si-subtitle">请填写以下信息，方便老师了解你的学习情况。Your info helps your teacher track your progress.</div>
+    <div class="si-field">
+      <label class="si-label">姓名 Full Name <span style="color:var(--wrong)">*</span></label>
+      <input class="si-input" id="si_name" type="text" placeholder="Your full name / 你的姓名" autocomplete="name">
+    </div>
+    <div class="si-row">
+      <div class="si-field">
+        <label class="si-label">班级 Class <span style="color:var(--wrong)">*</span></label>
+        <input class="si-input" id="si_class" type="text" placeholder="e.g. 7A, Grade 8B">
+      </div>
+      <div class="si-field">
+        <label class="si-label">学校 School</label>
+        <input class="si-input" id="si_school" type="text" placeholder="School name / 学校名称">
+      </div>
+    </div>
+    <div class="si-note">ℹ️ 姓名和班级为必填项。信息仅用于学情记录，不作其他用途。<br>Name and class are required. Info is used for learning records only.</div>
+    <button class="si-start-btn" onclick="confirmStudentInfo()">
+      <span style="font-family:'Noto Serif SC',serif;">确认并开始</span> · Confirm &amp; Start →
+    </button>
+    <div class="si-back-link" onclick="backToSetup()">← 返回 · Back to settings</div>
+  </div>
+</div>
+
+<!-- ═══════════════ QUIZ ═══════════════ -->
+<div class="quiz" id="quizScreen">
+  <div class="quiz-header">
+    <span class="tier-badge" id="qBadge">Tier 1</span>
+    <span class="q-counter" id="qCounter">1 / 10</span>
+    <button class="exit-btn" onclick="exitQuiz()" title="退出练习 Exit quiz">✕ 退出</button>
+    <div class="timer-wrap" id="timerWrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="timerDisplay">15:00</span>
+    </div>
+  </div>
+  <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+  <div id="qMount"></div>
+</div>
+
+<!-- ═══════════════ RESULT ═══════════════ -->
+<div class="result" id="resultScreen">
+  <div class="result-ring" id="rRing"></div>
+  <h2 id="rTitle">Well done!</h2>
+  <p class="r-sub" id="rSub"></p>
+  <div class="stars" id="rStars"></div>
+  <div class="result-msg" id="rMsg"></div>
+  <div class="result-btns">
+    <button class="btn-retry" onclick="retry()">再试一次 Retry</button>
+    <button class="btn-download" onclick="downloadAnswers()">⬇ 下载答案 Download</button>
+    <button class="btn-download-remedial" onclick="downloadRemedial()">📥 下载补弱练习 Remedial</button>
+    <button class="btn-print" onclick="printWorksheet()">🖨 下载试卷 Print PDF</button>
+    <button class="btn-back" onclick="goBack()">← Change settings</button>
+  </div>
+  <div class="analytics-panel" id="analyticsPanel"></div>
+</div>
+
+<!-- ═══════════════ STUDENT SURVEY (result page bottom, collapsed) ═══════════════ -->
+<div class="student-survey" id="studentSurveyWrap" style="display:none;">
+  <div class="survey-card">
+    <div class="survey-toggle-header" onclick="toggleSurveyBody()" id="surveyToggleHeader">
+      <div class="survey-header" style="margin-bottom:0; cursor:pointer;">
+        <div class="survey-icon">📝</div>
+        <div style="flex:1;">
+          <div class="survey-title">学生反馈问卷 · Student Feedback Survey</div>
+          <div class="survey-subtitle">点击展开 · 帮助老师改进课堂，只需2分钟 · Click to expand</div>
+        </div>
+        <span class="survey-toggle-arrow" id="surveyArrow">▼</span>
+      </div>
+    </div>
+    <div id="surveyBody" style="display:none;">
+      <hr class="survey-divider">
+      <div class="survey-q" id="sq1">
+        <div class="survey-q-label">1. 你觉得这个分层练习怎么样？How do you find this tiered quiz overall? <span class="survey-required">*</span></div>
+        <div class="survey-scale">
+          <span class="survey-scale-label">很差 Poor</span>
+          <button class="survey-scale-btn" onclick="selectScale('sq1',1)">1</button>
+          <button class="survey-scale-btn" onclick="selectScale('sq1',2)">2</button>
+          <button class="survey-scale-btn" onclick="selectScale('sq1',3)">3</button>
+          <button class="survey-scale-btn" onclick="selectScale('sq1',4)">4</button>
+          <button class="survey-scale-btn" onclick="selectScale('sq1',5)">5</button>
+          <span class="survey-scale-label">很好 Excellent</span>
+        </div>
+      </div>
+      <div class="survey-q" id="sq2">
+        <div class="survey-q-label">2. 这个练习是否有针对性？Does this practice feel targeted to your level? <span class="survey-required">*</span></div>
+        <div class="survey-options">
+          <span class="survey-option" onclick="selectSingle('sq2',this)">非常有针对性 Very targeted</span>
+          <span class="survey-option" onclick="selectSingle('sq2',this)">比较有针对性 Fairly targeted</span>
+          <span class="survey-option" onclick="selectSingle('sq2',this)">一般 So-so</span>
+          <span class="survey-option" onclick="selectSingle('sq2',this)">针对性不强 Not very targeted</span>
+        </div>
+      </div>
+      <div class="survey-q" id="sq3">
+        <div class="survey-q-label">3. 对你的HSK考试是否有帮助？Does this help with your HSK preparation? <span class="survey-required">*</span></div>
+        <div class="survey-options">
+          <span class="survey-option" onclick="selectSingle('sq3',this)">很有帮助 Very helpful</span>
+          <span class="survey-option" onclick="selectSingle('sq3',this)">有些帮助 Somewhat helpful</span>
+          <span class="survey-option" onclick="selectSingle('sq3',this)">帮助不大 Not much help</span>
+          <span class="survey-option" onclick="selectSingle('sq3',this)">没有帮助 Not helpful</span>
+        </div>
+      </div>
+      <div class="survey-q" id="sq4">
+        <div class="survey-q-label">4. 对掌握学习重点是否有帮助？Does it help you master the key learning points? <span class="survey-required">*</span></div>
+        <div class="survey-options">
+          <span class="survey-option" onclick="selectSingle('sq4',this)">非常有帮助 Very much</span>
+          <span class="survey-option" onclick="selectSingle('sq4',this)">有帮助 Helpful</span>
+          <span class="survey-option" onclick="selectSingle('sq4',this)">一般 Average</span>
+          <span class="survey-option" onclick="selectSingle('sq4',this)">帮助不大 Not much</span>
+        </div>
+      </div>
+      <div class="survey-q" id="sq5">
+        <div class="survey-q-label">5. 你最不喜欢哪种题型？Which question type do you like LEAST? <span class="survey-required">*</span></div>
+        <div class="survey-options">
+          <span class="survey-option" onclick="selectSingle('sq5',this)">选择题 Multiple Choice</span>
+          <span class="survey-option" onclick="selectSingle('sq5',this)">填空题 Fill-in</span>
+          <span class="survey-option" onclick="selectSingle('sq5',this)">连线题 Matching</span>
+          <span class="survey-option" onclick="selectSingle('sq5',this)">阅读题 Reading</span>
+          <span class="survey-option" onclick="selectSingle('sq5',this)">思维题 HOTS</span>
+        </div>
+      </div>
+      <div class="survey-q" id="sq6">
+        <div class="survey-q-label">6. 你最喜欢哪种题型？Which question type do you like MOST? <span class="survey-required">*</span></div>
+        <div class="survey-options">
+          <span class="survey-option" onclick="selectSingle('sq6',this)">选择题 Multiple Choice</span>
+          <span class="survey-option" onclick="selectSingle('sq6',this)">填空题 Fill-in</span>
+          <span class="survey-option" onclick="selectSingle('sq6',this)">连线题 Matching</span>
+          <span class="survey-option" onclick="selectSingle('sq6',this)">阅读题 Reading</span>
+          <span class="survey-option" onclick="selectSingle('sq6',this)">思维题 HOTS</span>
+        </div>
+      </div>
+      <div class="survey-q">
+        <div class="survey-q-label">7. 你还有什么意见和建议？（选填）Any other suggestions? <span style="color:var(--muted);font-weight:400;">Optional</span></div>
+        <textarea class="survey-textarea" id="survey_suggestions" placeholder="请写下你的想法 / Share your thoughts here…"></textarea>
+      </div>
+      <div id="surveyForm_submit">
+        <button class="survey-submit-btn" onclick="submitStudentSurvey()">提交反馈 Submit Feedback 📤</button>
+      </div>
+      <div class="survey-thanks" id="surveyThanks">
+        🎉 感谢你的反馈！Thank you for your feedback!
+        <span>老师会认真阅读你的意见，帮助改进课堂练习。Your teacher will review your responses. 🙏</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA — 跨越丝路 1B · 6 Lessons · CCG + HSK 3.0 (HSK 1–2)
+// Tier 1: 10 core questions (mc / fill / match)
+// Tier 2: 10 questions with HSK 1–2 grammar integration
+// Tier 3: 5 extended + 4 reading comprehension + 1 HOTS
+// ══════════════════════════════════════════════════════════════════
+
+const LESSONS = [
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LESSON 1 · 她是我妹妹。家庭成员
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ id:'1B-L1', num:'Lesson 1', title:'She is my younger sister. Family Members', cn:'家庭成员',
+  tiers:[
+  // TIER 1 — 10 questions
+  { qs:[
+    { type:'mc', stem:'<span class="cn">妹妹</span> means:', choices:['younger sister','older sister','younger brother','older brother'], ans:0, hint:'妹 = younger female sibling; 姐 = older female sibling' },
+    { type:'mc', stem:'<span class="cn">哥哥</span> means:', choices:['older brother','younger brother','older sister','younger sister'], ans:0, hint:'哥 = older male sibling; 弟 = younger male sibling' },
+    { type:'mc', stem:'<span class="cn">她是我妹妹。</span> means:', choices:['She is my younger sister.','He is my younger brother.','She is my older sister.','She is my mother.'], ans:0, hint:'她 = she, 是 = is, 我 = my, 妹妹 = younger sister' },
+    { type:'mc', stem:'Which word means "grandpa (paternal)"?', choices:['爷爷','奶奶','爸爸','妈妈'], ans:0, hint:'爷爷 = father\'s father (paternal grandfather)' },
+    { type:'mc', stem:'<span class="cn">奶奶</span> refers to:', choices:['paternal grandmother','maternal grandmother','aunt','older sister'], ans:0, hint:'奶奶 = father\'s mother — paternal grandmother' },
+    { type:'mc', stem:'To say "He is who?" in Chinese:', choices:['他是谁？','他是什么？','谁是他？','他在哪里？'], ans:0, hint:'谁 = who (疑问代词); 他是谁 = Who is he?' },
+    { type:'fill', stem:'Complete: <span class="cn">她是我的＿＿＿＿。</span> (She is my older sister.)', ans:['姐姐'], hint:'姐姐 = older sister; 妹妹 = younger sister' },
+    { type:'match', stem:'Match family member to English', left:['爸爸','妈妈','哥哥','弟弟'], right:['father','mother','older brother','younger brother'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Core family vocabulary from Lesson 1' },
+    { type:'mc', stem:'<span class="cn">他是我爸爸。</span> The sentence pattern used is:', choices:['Subject + 是 + noun (identity)','Subject + 有 + noun (possession)','Subject + 在 + place (location)','Question with 吗'], ans:0, hint:'是字句: Subject + 是 + Noun — states identity' },
+    { type:'fill', stem:'Ask "Who is she?": <span class="cn">她是＿＿？</span>', ans:['谁'], hint:'谁 = who — interrogative pronoun (疑问代词)' },
+  ]},
+  // TIER 2 — 10 questions
+  { qs:[
+    { type:'mc', stem:'<span class="cn">他是谁？</span> is which question type?', choices:['特指问句 (Wh-question with 谁)','是非问句 (Yes/No with 吗)','正反问句 (A-not-A)','选择问句 (either-or)'], ans:0, hint:'HSK1: 谁 is a 疑问代词 forming a 特指问句 (specific question)' },
+    { type:'mc', stem:'In <span class="cn">她是我妹妹</span>, 我 functions as:', choices:['possessive modifier (my)','subject (I)','object (me)','adverb'], ans:0, hint:'HSK1: 我 + noun = my + noun — pronoun used as possessive without 的 in short phrases' },
+    { type:'mc', stem:'Which is the correct negative of <span class="cn">她是我妹妹？</span>', choices:['她不是我妹妹。','她没是我妹妹。','她不有我妹妹。','没她是我妹妹。'], ans:0, hint:'HSK1: 是 negates with 不 (not 没) — 不是 = is not' },
+    { type:'fill', stem:'Complete: <span class="cn">A: 这是谁？B: 这是我的＿＿＿＿。</span> (This is my grandpa.)', ans:['爷爷'], hint:'爷爷 = paternal grandfather' },
+    { type:'mc', stem:'<span class="cn">他是我哥哥，不是我爸爸。</span> This sentence uses:', choices:['对比否定 (contrastive negation with 不是)','完成态 with 了','持续态 with 着','比较句 with 比'], ans:0, hint:'不是…而是 or contrasting 不是 + 是 — common pattern for clarification' },
+    { type:'match', stem:'Match Chinese family term to relationship', left:['爷爷','奶奶','姐姐','弟弟'], right:['paternal grandfather','paternal grandmother','older sister','younger brother'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'HSK1 family vocabulary — note paternal vs maternal distinction' },
+    { type:'mc', stem:'In Chinese culture, the song <span class="cn">家族歌</span> (family song) helps children remember:', choices:['Family member terms in order','School subjects','Numbers 1–10','Greetings'], ans:0, hint:'文化点: 家族歌 is a traditional Chinese rhyme for memorising family relationships' },
+    { type:'fill', stem:'Say "She is not my younger sister": <span class="cn">她＿＿我妹妹。</span>', ans:['不是'], hint:'不是 = is not; 是 negates with 不' },
+    { type:'mc', stem:'The sentence <span class="cn">他是我爸爸</span> — why is there no 的 between 我 and 爸爸?', choices:['Short, close-relationship possessives often omit 的 in Chinese','的 is never used with family terms','的 is only used in questions','我的 would change the meaning'], ans:0, hint:'HSK1: 我爸爸 / 我妈妈 — 的 can be omitted with close family/friends in informal contexts' },
+    { type:'mc', stem:'Which question correctly asks about identity?', choices:['这是谁？','这是什么？','这在哪里？','这多少钱？'], ans:0, hint:'谁 = who (for people); 什么 = what (for things)' },
+  ]},
+  // TIER 3
+  { qs:[
+    { type:'mc', stem:'In HSK grammar, 谁 is a 疑问代词. What distinguishes it from 什么?', choices:['谁 asks about people; 什么 asks about things/ideas','They are interchangeable','谁 asks about places; 什么 asks about people','谁 is used in statements; 什么 in questions'], ans:0, hint:'疑问代词 classification: 谁(person) / 什么(thing) / 哪(choice) / 怎么(manner)' },
+    { type:'mc', stem:'In Chinese kinship terms, why does Chinese have separate words for paternal grandparents (爷爷/奶奶) and maternal grandparents (姥爷/姥姥)?', choices:['Traditional Chinese family structure placed greater importance on the paternal line, requiring precise vocabulary','It is a coincidence of language development','The terms are interchangeable in modern Chinese','Chinese simply copied Japanese family terms'], ans:0, hint:'Cultural and historical: Confucian patrilineal family structure influenced kinship vocabulary' },
+    { type:'fill', stem:'Complete the sentence correctly: <span class="cn">A: 这位是谁？B: 这是我＿＿＿，他叫王大明。</span>', ans:['爷爷','哥哥','弟弟','爸爸'], hint:'Any close male family member fits — the focus is using 是 + family term correctly' },
+    { type:'mc', stem:'<span class="cn">她是我妹妹，不是我姐姐。</span> This uses:', choices:['是字句 with contrastive 不是 to clarify identity','名词谓语句 without 是','比较句 with 比','双宾语句 with two objects'], ans:0, hint:'是字句: Subject + 是 + Noun; negated version uses 不是 for contrast' },
+    { type:'mc', stem:'Which correctly describes 是 in HSK grammar?', choices:['是 is a 动词 (verb) expressing identity, equality, or classification','是 is an 副词 (adverb) modifying verbs','是 is a 助词 (particle) with no meaning','是 can only appear in questions'], ans:0, hint:'HSK1: 是字句¹ — 是 as copula verb expressing identity/classification' },
+    // READING Q6–Q9
+    { type:'reading',
+      passage:'我叫阿里，我有一个大家庭。我的爸爸叫穆罕默德，妈妈叫法蒂玛。我有一个哥哥，叫哈立德，还有一个妹妹，叫莎拉。我们家还有爷爷和奶奶。爷爷很喜欢给我们讲故事。我的好朋友小华来自中国，他说中国的孩子也很爱家人。他说：\"她是我妹妹，他是我哥哥。\"我觉得我们的家庭文化很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'How many siblings does Ali have?',
+      choices:['Two — one older brother and one younger sister','One younger brother','Three siblings','No siblings'],
+      ans:0, hint:'一个哥哥 + 一个妹妹 = two siblings' },
+    { type:'reading',
+      passage:'我叫阿里，我有一个大家庭。我的爸爸叫穆罕默德，妈妈叫法蒂玛。我有一个哥哥，叫哈立德，还有一个妹妹，叫莎拉。我们家还有爷爷和奶奶。爷爷很喜欢给我们讲故事。我的好朋友小华来自中国，他说中国的孩子也很爱家人。他说：\"她是我妹妹，他是我哥哥。\"我觉得我们的家庭文化很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'Who likes telling stories in Ali\'s family?',
+      choices:['Grandfather (爷爷)','Grandmother (奶奶)','Father (爸爸)','Older brother Khalid'],
+      ans:0, hint:'爷爷很喜欢给我们讲故事' },
+    { type:'reading',
+      passage:'我叫阿里，我有一个大家庭。我的爸爸叫穆罕默德，妈妈叫法蒂玛。我有一个哥哥，叫哈立德，还有一个妹妹，叫莎拉。我们家还有爷爷和奶奶。爷爷很喜欢给我们讲故事。我的好朋友小华来自中国，他说中国的孩子也很爱家人。他说：\"她是我妹妹，他是我哥哥。\"我觉得我们的家庭文化很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What does Xiao Hua say about Chinese children?',
+      choices:['They also love their family members','They do not have siblings','They prefer to live alone','They have very small families'],
+      ans:0, hint:'中国的孩子也很爱家人' },
+    { type:'reading',
+      passage:'我叫阿里，我有一个大家庭。我的爸爸叫穆罕默德，妈妈叫法蒂玛。我有一个哥哥，叫哈立德，还有一个妹妹，叫莎拉。我们家还有爷爷和奶奶。爷爷很喜欢给我们讲故事。我的好朋友小华来自中国，他说中国的孩子也很爱家人。他说：\"她是我妹妹，他是我哥哥。\"我觉得我们的家庭文化很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What is Ali\'s conclusion about family culture in China and the UAE?',
+      choices:['They are very similar (很相似)','They are completely different','Chinese families are bigger','Emirati families are more loving'],
+      ans:0, hint:'我觉得我们的家庭文化很相似！' },
+    // HOTS Q10
+    { type:'hots',
+      stem:'In Chinese, there are many specific words for family members (爷爷/奶奶/姥爷/姥姥 for grandparents, etc.). In Arabic and English, family vocabulary is sometimes less specific. <span class="cn">中文的家庭称呼很详细。</span> What does a language\'s family vocabulary tell us about the culture\'s values? Do you think having more specific family terms is a sign of a family-oriented culture?',
+      prompts:[
+        'Think: in Arabic, how do you distinguish paternal and maternal grandparents? How about in English?',
+        'Chinese has separate terms for older brother (哥哥) and younger brother (弟弟). Why might age order matter in Chinese family culture?',
+        'Is your own family "big" or "small"? How does family structure differ between UAE and Chinese cultures?'
+      ],
+      hint:'Think about Confucian values (respect for elders, filial piety) and Islamic family values — both cultures deeply value family.' },
+  ]},
+]},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LESSON 2 · 我有两个哥哥。家庭
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ id:'1B-L2', num:'Lesson 2', title:'I have two older brothers. Family', cn:'家庭',
+  tiers:[
+  { qs:[
+    { type:'mc', stem:'<span class="cn">我有两个哥哥。</span> means:', choices:['I have two older brothers.','I am two brothers.','Two brothers like me.','I want two older brothers.'], ans:0, hint:'有 = have; 两个 = two (with measure word 个)' },
+    { type:'mc', stem:'The measure word for people is:', choices:['个','本','只','张'], ans:0, hint:'个 is the most common measure word, used for people and many general objects' },
+    { type:'mc', stem:'Which number uses 两 instead of 二?', choices:['两个哥哥 (two older brothers)','第二 (the second)','十二 (twelve)','二月 (February)'], ans:0, hint:'两 is used before measure words; 二 is used in sequences, ordinals, and arithmetic' },
+    { type:'mc', stem:'<span class="cn">没有</span> means:', choices:['do not have','have already','have too many','want to have'], ans:0, hint:'没有 = do not have; opposite of 有' },
+    { type:'mc', stem:'<span class="cn">和</span> in <span class="cn">爸爸和妈妈</span> is:', choices:['a conjunction meaning "and"','a verb meaning "like"','an adverb meaning "very"','a question particle'], ans:0, hint:'HSK1: 和² as 连词 — connects nouns/noun phrases' },
+    { type:'mc', stem:'<span class="cn">孩子</span> means:', choices:['child/children','family','parents','grandparents'], ans:0, hint:'孩 = child; 子 = suffix for people — 孩子 = child/children' },
+    { type:'fill', stem:'Say "I have a family": <span class="cn">我有一个＿＿。</span>', ans:['家','家庭'], hint:'家 = home/family; 家庭 = family (more formal)' },
+    { type:'match', stem:'Match quantity phrase to meaning', left:['一个','两个','没有','有一个'], right:['one (person/thing)','two (persons/things)','do not have','have one'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Number + 个 + noun — basic measure word structure' },
+    { type:'mc', stem:'<span class="cn">我有两个哥哥。</span> uses which sentence type?', choices:['"有"字句 expressing possession','名词谓语句 (noun predicate)','是字句 expressing identity','比较句 expressing comparison'], ans:0, hint:'HSK1: 有字句¹ — Subject + 有 + number + measure word + noun' },
+    { type:'fill', stem:'Ask "Do you have siblings?": <span class="cn">你有兄弟姐妹＿＿？</span>', ans:['吗'], hint:'吗 turns a statement into a yes/no question (是非问句)' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'<span class="cn">我有两个哥哥。</span> — why is 两 used instead of 二?', choices:['两 must be used before measure words (个); 二 is for sequences and arithmetic','They are interchangeable','二 is more formal than 两','两 is only used for people'], ans:0, hint:'HSK1: 数词 — 两 + 量词 (both/two things together); 二 in ordinals and number sequences' },
+    { type:'mc', stem:'The sentence <span class="cn">我没有弟弟。</span> uses:', choices:['否定副词 没 (negating 有)','否定副词 不 (negating a verb)','动态助词 过','语气助词 吗'], ans:0, hint:'HSK1: 有 negates with 没 (not 不): 没有 = do not have' },
+    { type:'fill', stem:'Complete: <span class="cn">我家有四口人：爸爸、妈妈、哥哥和＿＿。</span>', ans:['我'], hint:'口 is the measure word for family members (家口); 我 completes the list' },
+    { type:'mc', stem:'<span class="cn">口</span> in <span class="cn">我家有三口人</span> is:', choices:['a measure word for family members','a noun meaning mouth','a verb meaning to speak','an adjective meaning large'], ans:0, hint:'HSK1: 口 as 名量词 — used specifically for counting family members (家口)' },
+    { type:'mc', stem:'Culture: In China\'s one-child policy era (1980–2015), most urban children were:', choices:['独生子女 (only children) with no siblings','required to have two siblings','always part of extended families','allowed up to three children'], ans:0, hint:'文化点: 独生子女政策 — one child policy shaped Chinese family structure for 35 years' },
+    { type:'mc', stem:'<span class="cn">我有两个哥哥和一个妹妹。</span> — 和 here connects:', choices:['noun phrases (两个哥哥 and 一个妹妹)','two sentences','a verb to its object','two adjectives'], ans:0, hint:'HSK1: 和² as 连词 — connecting coordinate noun phrases' },
+    { type:'match', stem:'Match sentence to grammar feature', left:['我有两个哥哥。','我没有姐姐。','你有兄弟吗？','她有一个妹妹和一个弟弟。'], right:['"有"字句 (possession)','没有 negation','是非问句 with 吗','和 connecting noun phrases'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Identify the key grammar feature in each sentence' },
+    { type:'fill', stem:'Say "She does not have any children": <span class="cn">她＿＿＿孩子。</span>', ans:['没有'], hint:'没有 = do not have — 有 negates with 没' },
+    { type:'mc', stem:'In HSK grammar, 个 belongs to which word class?', choices:['量词 (measure word)','数词 (numeral)','代词 (pronoun)','副词 (adverb)'], ans:0, hint:'HSK1: 个 = 量词 (名量词) — the most versatile measure word in Mandarin' },
+    { type:'mc', stem:'Which sentence uses 有 INCORRECTLY?', choices:['我是有两个哥哥。','我有两个哥哥。','他有一个妹妹。','她没有兄弟。'], ans:0, hint:'有 is the main verb — no 是 before 有 in possession sentences' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'<span class="cn">有字句</span> in HSK grammar expresses possession. Which sentence correctly uses this pattern?', choices:['我有两个哥哥和一个妹妹。','我是两个哥哥。','我两个哥哥有。','两个哥哥是我有。'], ans:0, hint:'有字句: Subject + 有 + numeral + measure word + noun' },
+    { type:'mc', stem:'Why does Chinese use 没有 to negate 有, while English uses "don\'t have"?', choices:['有 is a stative verb in Chinese that negates with 没 (not 不), which marks absence','不 and 没 are interchangeable for all verbs','有 always uses 不 in formal contexts','Chinese does not negate 有 directly'], ans:0, hint:'HSK1: stative verb 有 → 没有; dynamic verbs like 是 → 不是; action verbs → 不 or 没' },
+    { type:'fill', stem:'"Our family has five members." <span class="cn">我们家有五＿＿人。</span>', ans:['口'], hint:'口 = measure word for family members; 家口 = household members' },
+    { type:'mc', stem:'In 我有两个哥哥，the number-measure word phrase 两个 functions as:', choices:['定语 (attributive modifier) before the noun 哥哥','状语 (adverbial) before the verb','补语 (complement) after the verb','谓语 (predicate) of the sentence'], ans:0, hint:'数量短语 (number + measure word) functions as 定语 modifying the following noun' },
+    { type:'mc', stem:'Compare: Chinese 兄弟姐妹 (siblings) vs English "siblings". What is linguistically interesting?', choices:['Chinese specifies gender and age order (兄=older brother, 弟=younger brother, 姐=older sister, 妹=younger sister) in the compound word itself','They are essentially the same concept','Chinese has no single word for siblings','English is more precise about sibling age'], ans:0, hint:'兄弟姐妹 = older brother + younger brother + older sister + younger sister — age and gender encoded' },
+    // READING
+    { type:'reading',
+      passage:'我叫小华，我是独生子——我没有兄弟，也没有姐妹。在中国，很多我的同学也是独生子女。我的好朋友阿里来自阿联酋，他说他有两个哥哥和一个妹妹。我觉得很羡慕！在中国，因为以前的独生子女政策，很多孩子没有兄弟姐妹。现在政策改变了，很多家庭有两个或三个孩子。',
+      passageLabel:'Reading · 阅读理解',
+      stem:'Why does Xiao Hua have no siblings?',
+      choices:['Because of China\'s former one-child policy','Because his parents chose not to have more children','Because siblings are expensive','Because he is the youngest child'],
+      ans:0, hint:'因为以前的独生子女政策' },
+    { type:'reading',
+      passage:'我叫小华，我是独生子——我没有兄弟，也没有姐妹。在中国，很多我的同学也是独生子女。我的好朋友阿里来自阿联酋，他说他有两个哥哥和一个妹妹。我觉得很羡慕！在中国，因为以前的独生子女政策，很多孩子没有兄弟姐妹。现在政策改变了，很多家庭有两个或三个孩子。',
+      passageLabel:'Reading · 阅读理解',
+      stem:'How many siblings does Ali have?',
+      choices:['Three (two older brothers and one younger sister)','One','None','Two younger sisters'],
+      ans:0, hint:'两个哥哥和一个妹妹 = three siblings total' },
+    { type:'reading',
+      passage:'我叫小华，我是独生子——我没有兄弟，也没有姐妹。在中国，很多我的同学也是独生子女。我的好朋友阿里来自阿联酋，他说他有两个哥哥和一个妹妹。我觉得很羡慕！在中国，因为以前的独生子女政策，很多孩子没有兄弟姐妹。现在政策改变了，很多家庭有两个或三个孩子。',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What has changed in China now regarding family policy?',
+      choices:['The policy changed — many families now have two or three children','The policy became even stricter','Nothing has changed','Only rural families can have more children'],
+      ans:0, hint:'现在政策改变了，很多家庭有两个或三个孩子' },
+    { type:'reading',
+      passage:'我叫小华，我是独生子——我没有兄弟，也没有姐妹。在中国，很多我的同学也是独生子女。我的好朋友阿里来自阿联酋，他说他有两个哥哥和一个妹妹。我觉得很羡慕！在中国，因为以前的独生子女政策，很多孩子没有兄弟姐妹。现在政策改变了，很多家庭有两个或三个孩子。',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What does Xiao Hua feel about Ali having siblings?',
+      choices:['He envies him (很羡慕)','He feels sorry for Ali','He thinks it is strange','He does not care'],
+      ans:0, hint:'我觉得很羡慕！— 羡慕 = to envy / feel envious' },
+    { type:'hots',
+      stem:'China\'s one-child policy (独生子女政策) meant millions of Chinese children grew up as only children, while many Emirati families traditionally have many children. <span class="cn">中国和阿联酋的家庭大小很不一样。</span> What do you think are the advantages and disadvantages of growing up as an only child vs growing up in a large family? Which do you prefer and why?',
+      prompts:[
+        'Think about: attention from parents, loneliness vs noise, sharing resources, learning to cooperate.',
+        'How might China\'s one-child policy have changed Chinese social attitudes about family?',
+        'In your own family experience, is bigger always better? Or do small families have advantages?'
+      ],
+      hint:'Balance both sides — there is no single right answer; show your reasoning.' },
+  ]},
+]},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LESSON 3 · 我爱我家。介绍自己和家庭
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ id:'1B-L3', num:'Lesson 3', title:'I love my family. Self-Introduction', cn:'介绍自己和家庭',
+  tiers:[
+  { qs:[
+    { type:'mc', stem:'<span class="cn">爱</span> means:', choices:['love','like','want','have'], ans:0, hint:'爱 = love (stronger than 喜欢); 我爱你 = I love you' },
+    { type:'mc', stem:'<span class="cn">大家</span> means:', choices:['everyone','big family','older person','large house'], ans:0, hint:'大 = big/all, 家 = home/family — 大家 = everyone' },
+    { type:'mc', stem:'<span class="cn">这是我的一家。</span> means:', choices:['This is my family.','This is my home.','We are all one.','This is one family.'], ans:0, hint:'一家 = one family; 我的 = my' },
+    { type:'mc', stem:'Which means "mouth" AND is used as a measure word for family members?', choices:['口','手','头','脚'], ans:0, hint:'口 = mouth; also measure word: 我家有四口人' },
+    { type:'mc', stem:'<span class="cn">介绍</span> means:', choices:['to introduce','to greet','to ask','to answer'], ans:0, hint:'介绍 = introduce; 自我介绍 = self-introduction' },
+    { type:'mc', stem:'<span class="cn">我爱大家！</span> — 大家 here means:', choices:['everyone (all of you)','my big family','the whole country','the teacher'], ans:0, hint:'大家 = everyone; used to address a group' },
+    { type:'fill', stem:'Complete the self-introduction sentence: <span class="cn">大家好！我叫阿里，我＿＿阿联酋人。</span>', ans:['是'], hint:'是 = am/is/are — 是字句 for identity' },
+    { type:'match', stem:'Match Chinese to English', left:['爱','大家','介绍','一家'], right:['love','everyone','to introduce','one family'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Key vocabulary from Lesson 3' },
+    { type:'mc', stem:'<span class="cn">我爱我家。</span> — What type of sentence is this?', choices:['动词谓语句 with 爱 as the verb','名词谓语句 without a verb','是字句 expressing identity','有字句 expressing possession'], ans:0, hint:'爱 is the predicate verb — 动词谓语句' },
+    { type:'fill', stem:'Introduce yourself: <span class="cn">大家好！我叫法蒂玛。我有一个哥哥和一个＿＿。</span>', ans:['妹妹','弟弟','姐姐'], hint:'Any sibling term works — the focus is using 和 to link the family members' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'A self-introduction (自我介绍) in Chinese typically covers:', choices:['Name (叫), nationality (是…人), family (有…), hobbies (喜欢)','Only name and age','Only nationality','Only family members'], ans:0, hint:'HSK1-2: 自我介绍 pattern — 我叫 + 我是 + 我有 + 我喜欢 = complete introduction' },
+    { type:'mc', stem:'<span class="cn">我爱我的家人。</span> vs <span class="cn">我爱我家人。</span> — which is more natural?', choices:['Both are natural; 我的 is often omitted with close family in spoken Chinese','Only 我爱我的家人 is correct','Only 我爱我家人 is correct','They have completely different meanings'], ans:0, hint:'HSK1: 的 can be omitted in short, intimate possessive phrases — both forms are used' },
+    { type:'fill', stem:'Complete a self-introduction: <span class="cn">大家好！我叫小华。我是中国人。我家有＿＿口人。</span>', ans:['三','四','五','六','七'], hint:'Any reasonable family size works — focus is on 口 as measure word for family members' },
+    { type:'mc', stem:'In Chinese, 自我介绍 typically begins with:', choices:['大家好！(Hello everyone!)','你好！(Hello to you!)','老师好！(Hello teacher!)','再见！(Goodbye!)'], ans:0, hint:'大家好 = greeting everyone — standard start for a group introduction' },
+    { type:'mc', stem:'<span class="cn">我爱我家</span> — in HSK grammar, both 爱 and 家 can be:', choices:['爱 = 动词 (verb); 家 = 名词 (noun)','Both are 动词 (verbs)','Both are 名词 (nouns)','爱 = 形容词; 家 = 动词'], ans:0, hint:'爱 = to love (verb); 家 = home/family (noun as object)' },
+    // READING
+    { type:'reading',
+      passage:'大家好！我叫小红，我是中国人。我来自上海，现在住在迪拜。我家有五口人：爸爸、妈妈、哥哥、妹妹和我。我的爸爸是医生，妈妈是老师。我哥哥叫小明，他十五岁。我妹妹叫小雨，她八岁。我们都很爱我们的家！我的好朋友阿里也介绍了他的家庭。他说他有一个很大的家庭，大家庭在一起生活，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'How many people are in Xiao Hong\'s family?',
+      choices:['Five people / 五口人','Three people / 三口人','Four people / 四口人','Six people / 六口人'],
+      ans:0, hint:'我家有五口人：爸爸、妈妈、哥哥、妹妹和我' },
+    { type:'reading',
+      passage:'大家好！我叫小红，我是中国人。我来自上海，现在住在迪拜。我家有五口人：爸爸、妈妈、哥哥、妹妹和我。我的爸爸是医生，妈妈是老师。我哥哥叫小明，他十五岁。我妹妹叫小雨，她八岁。我们都很爱我们的家！我的好朋友阿里也介绍了他的家庭。他说他有一个很大的家庭，大家庭在一起生活，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What does Xiao Hong\'s father do?',
+      choices:['He is a doctor / 医生','He is a teacher / 老师','He is a businessman','He is a driver'],
+      ans:0, hint:'我的爸爸是医生' },
+    { type:'reading',
+      passage:'大家好！我叫小红，我是中国人。我来自上海，现在住在迪拜。我家有五口人：爸爸、妈妈、哥哥、妹妹和我。我的爸爸是医生，妈妈是老师。我哥哥叫小明，他十五岁。我妹妹叫小雨，她八岁。我们都很爱我们的家！我的好朋友阿里也介绍了他的家庭。他说他有一个很大的家庭，大家庭在一起生活，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'How old is Xiao Hong\'s younger sister Xiao Yu?',
+      choices:['8 years old / 八岁','10 years old / 十岁','15 years old / 十五岁','12 years old / 十二岁'],
+      ans:0, hint:'我妹妹叫小雨，她八岁' },
+    { type:'reading',
+      passage:'大家好！我叫小红，我是中国人。我来自上海，现在住在迪拜。我家有五口人：爸爸、妈妈、哥哥、妹妹和我。我的爸爸是医生，妈妈是老师。我哥哥叫小明，他十五岁。我妹妹叫小雨，她八岁。我们都很爱我们的家！我的好朋友阿里也介绍了他的家庭。他说他有一个很大的家庭，大家庭在一起生活，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What does Ali say about his large family?',
+      choices:['The extended family lives together and is very happy','His family is scattered across many cities','His large family causes problems','He prefers a smaller family'],
+      ans:0, hint:'大家庭在一起生活，非常快乐！— 快乐 = happy' },
+    { type:'hots',
+      stem:'Xiao Hong\'s family has 5 people living as a nuclear family, while Ali has an extended family where everyone lives together and is very happy. <span class="cn">中国人和阿联酋人的家庭生活方式不一样。</span> In Chinese culture, family is expressed through words like 爱, 家 and 大家. What do these words tell us about Chinese values? How do you express family love in your own culture?',
+      prompts:[
+        'The character 家 means both "home" and "family" in Chinese. What does this tell us about Chinese values?',
+        '大家 (everyone) is made of 大 (big) + 家 (family/home). Does this reflect how Chinese see society?',
+        'How do Emirati families express love and togetherness? Are there similarities with Chinese culture?'
+      ],
+      hint:'Look at the meaning embedded in the characters themselves — Chinese characters often carry cultural values.' },
+  ]},
+]},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LESSON 4 · 现在几点？时间
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ id:'1B-L4', num:'Lesson 4', title:'What time is it now? Time', cn:'时间',
+  tiers:[
+  { qs:[
+    { type:'mc', stem:'<span class="cn">现在几点？</span> means:', choices:['What time is it now?','What day is it?','What is the date?','How many hours?'], ans:0, hint:'现在 = now, 几 = how many/which, 点 = o\'clock' },
+    { type:'mc', stem:'<span class="cn">现在八点。</span> means:', choices:['It is 8 o\'clock now.','It is 8 minutes now.','Now is 8.','8 o\'clock is here.'], ans:0, hint:'现在 = now, 八点 = 8 o\'clock' },
+    { type:'mc', stem:'<span class="cn">分</span> in time expressions means:', choices:['minute','second','hour','half'], ans:0, hint:'点 = o\'clock (hour); 分 = minute; 秒 = second' },
+    { type:'mc', stem:'<span class="cn">上午</span> means:', choices:['morning (AM)','afternoon (PM)','evening','noon'], ans:0, hint:'上 = up/before, 午 = noon — 上午 = before noon = morning (AM)' },
+    { type:'mc', stem:'How do you say "half past" in Chinese?', choices:['半','分','点','刻'], ans:0, hint:'半 = half; 八点半 = 8:30 (half past eight)' },
+    { type:'mc', stem:'<span class="cn">零</span> in time expressions (e.g., 八点零五分) means:', choices:['zero (bridging tens and units)','o\'clock','minute','half'], ans:0, hint:'零 = zero; used when minutes are 01–09 to bridge: 八点零五分 = 8:05' },
+    { type:'fill', stem:'Say "It is now 3 o\'clock": <span class="cn">现在＿＿点。</span>', ans:['三'], hint:'三点 = 3 o\'clock' },
+    { type:'match', stem:'Match time expression to meaning', left:['上午','中午','下午','晚上'], right:['morning (AM)','noon','afternoon (PM)','evening/night'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Time of day vocabulary — essential for scheduling in Chinese' },
+    { type:'mc', stem:'How do you say 9:30 in Chinese?', choices:['九点半','九点三十','九点三','九半点'], ans:0, hint:'九点半 = 9:30; half = 半; alternatively 九点三十分' },
+    { type:'fill', stem:'Complete: <span class="cn">现在下午两点＿＿分。</span> (It is 2:15 PM.)', ans:['十五','一刻'], hint:'十五分 = 15 minutes; 一刻 = quarter past (also correct)' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'In Chinese, the word order for telling time is:', choices:['Hour (点) + minutes (分); e.g. 八点二十分','Minutes then hours','Day before time','Time is expressed only in 12-hour format'], ans:0, hint:'HSK1: 钟点表示法 — hour first, then minutes: 八点二十分 = 8:20' },
+    { type:'mc', stem:'<span class="cn">现在几点？</span> uses 几 as a:', choices:['疑问代词 (interrogative pronoun) asking for a number','指示代词 (demonstrative pronoun)','人称代词 (personal pronoun)','副词 (adverb)'], ans:0, hint:'HSK1: 几 as 疑问代词 — asks for a number (usually 1–9); here asking for the hour' },
+    { type:'fill', stem:'Express 10:05: <span class="cn">十点＿＿五分。</span>', ans:['零'], hint:'零 bridges when minutes are 01–09: 十点零五分 = 10:05' },
+    { type:'mc', stem:'<span class="cn">一刻</span> in time expressions means:', choices:['a quarter (15 minutes)','one minute','one hour','one second'], ans:0, hint:'刻 = quarter of an hour; 一刻 = 15 minutes, 三刻 = 45 minutes' },
+    { type:'mc', stem:'Culture: The ancient Chinese timekeeping system divided the day into:', choices:['12 两小时时辰 (12 double-hours named after the zodiac)','24 equal hours like today','10 periods of time','60 minute units'], ans:0, hint:'文化点: 中国古代计时法 — 12 双时辰, each ~2 hours, named 子时, 丑时, etc.' },
+    { type:'mc', stem:'<span class="cn">下午三点半。</span> This expresses:', choices:['A time (3:30 PM)','A day of the week','A date','A duration'], ans:0, hint:'下午 = PM, 三点 = 3 o\'clock, 半 = half = 3:30 PM' },
+    { type:'match', stem:'Match time to Chinese expression', left:['8:00 AM','12:00 noon','2:15 PM','10:30 PM'], right:['上午八点','中午十二点','下午两点一刻','晚上十点半'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Combine time-of-day word + hour + minutes/quarter' },
+    { type:'fill', stem:'Ask what time Xiao Ming gets up: <span class="cn">小明几点＿＿床？</span>', ans:['起'], hint:'起床 = to get up (out of bed); 离合词 — can split: 几点起床？' },
+    { type:'mc', stem:'In HSK grammar, 点 in 八点 functions as a:', choices:['时量词 (time measure word for hours)','名量词 (nominal measure word)','动量词 (verbal measure word)','副词 (adverb)'], ans:0, hint:'HSK1: 点 = 时量词 — measure word in the time category (年、月、日、点、分)' },
+    { type:'mc', stem:'Which is the correct way to say 7:45?', choices:['七点四十五分 OR 差一刻八点','七点三刻','七点七十五分','差十五分七点'], ans:0, hint:'七点四十五分 = 7:45; alternatively 差一刻八点 = quarter to eight; 三刻 = 45 mins is also common' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'In Chinese, 一刻 = 15 min, 半 = 30 min, 三刻 = 45 min. These are:', choices:['借用的时间量词 (borrowed time measure expressions using 刻)','random vocabulary items','only used in formal contexts','always replaced by digital time in modern Chinese'], ans:0, hint:'HSK1: 刻 as 时量词 — 一刻(15min), 半(30min), 三刻(45min) — traditional quarter-hour system' },
+    { type:'mc', stem:'<span class="cn">差一刻八点</span> (quarter to eight = 7:45) — 差 here means:', choices:['short of / lacking (差 = to be short of)','wrong / incorrect','difference in quality','to check'], ans:0, hint:'差 = short of; 差一刻 = one quarter short = 15 minutes before the hour' },
+    { type:'fill', stem:'How do you say "It is 6:08 in the morning"? <span class="cn">上午六点＿＿八分。</span>', ans:['零'], hint:'零 bridges 01–09 minutes: 六点零八分 = 6:08' },
+    { type:'mc', stem:'Why does Chinese use 上午/下午 with the 12-hour clock rather than a 24-hour system in everyday speech?', choices:['Everyday Chinese communication tends to use 上午/下午 for clarity in 12-hour format; 24-hour format is used in official/transport contexts','Chinese does not have a 24-hour clock system','上午 and 下午 are only for formal speech','The 24-hour clock is illegal in China'], ans:0, hint:'Context: 24-hour system used in transport, military; 上午/下午 in daily conversation' },
+    { type:'mc', stem:'<span class="cn">古代中国把一天分成十二个时辰。</span> What does 时辰 represent?', choices:['A traditional Chinese two-hour period (双时辰) named after the 12 zodiac animals','A modern Chinese time unit','A period of 30 minutes','A unit equal to one modern hour'], ans:0, hint:'文化: 子时(23:00-01:00), 丑时(01:00-03:00)… each 时辰 = 2 modern hours; 12×2 = 24 hours' },
+    // READING
+    { type:'reading',
+      passage:'我叫阿里，我每天的生活很规律。早上六点半，我起床。上午七点，我吃早饭。七点半，我去上学。我们上午八点开始上课，中午十二点下课。下午两点，我们继续上课，下午四点放学。晚上七点，我们吃晚饭。晚上九点，我开始做作业。晚上十点半，我睡觉。我的中国朋友小华说，他也七点起床，八点上课。我们的时间表很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What time does Ali get up every morning?',
+      choices:['6:30 AM / 早上六点半','7:00 AM / 早上七点','7:30 AM / 早上七点半','6:00 AM / 早上六点'],
+      ans:0, hint:'早上六点半，我起床' },
+    { type:'reading',
+      passage:'我叫阿里，我每天的生活很规律。早上六点半，我起床。上午七点，我吃早饭。七点半，我去上学。我们上午八点开始上课，中午十二点下课。下午两点，我们继续上课，下午四点放学。晚上七点，我们吃晚饭。晚上九点，我开始做作业。晚上十点半，我睡觉。我的中国朋友小华说，他也七点起床，八点上课。我们的时间表很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What time does school finish in the afternoon?',
+      choices:['4:00 PM / 下午四点','2:00 PM / 下午两点','3:00 PM / 下午三点','5:00 PM / 下午五点'],
+      ans:0, hint:'下午四点放学' },
+    { type:'reading',
+      passage:'我叫阿里，我每天的生活很规律。早上六点半，我起床。上午七点，我吃早饭。七点半，我去上学。我们上午八点开始上课，中午十二点下课。下午两点，我们继续上课，下午四点放学。晚上七点，我们吃晚饭。晚上九点，我开始做作业。晚上十点半，我睡觉。我的中国朋友小华说，他也七点起床，八点上课。我们的时间表很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What time does Ali go to sleep?',
+      choices:['10:30 PM / 晚上十点半','9:00 PM / 晚上九点','11:00 PM / 晚上十一点','10:00 PM / 晚上十点'],
+      ans:0, hint:'晚上十点半，我睡觉' },
+    { type:'reading',
+      passage:'我叫阿里，我每天的生活很规律。早上六点半，我起床。上午七点，我吃早饭。七点半，我去上学。我们上午八点开始上课，中午十二点下课。下午两点，我们继续上课，下午四点放学。晚上七点，我们吃晚饭。晚上九点，我开始做作业。晚上十点半，我睡觉。我的中国朋友小华说，他也七点起床，八点上课。我们的时间表很相似！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What does Ali think about comparing his schedule with Xiao Hua\'s?',
+      choices:['Their schedules are very similar','Chinese students go to school much earlier','Xiao Hua has much more homework','They have completely different timetables'],
+      ans:0, hint:'我们的时间表很相似！— 时间表 = schedule/timetable' },
+    { type:'hots',
+      stem:'In ancient China, the day was divided into 12 时辰 (double-hours), each named after a zodiac animal. Today, we use digital 24-hour clocks on our phones. <span class="cn">古代和现代的计时方法很不一样。</span> How has technology changed our relationship with time? Do you think modern people are too obsessed with time? Is there anything valuable in the ancient Chinese approach to time that we might be losing?',
+      prompts:[
+        'Think about: in ancient times, people used water clocks, sundials, and bells to tell time. How did this affect daily life?',
+        'Today, people check their phones hundreds of times a day. Is this a healthy relationship with time?',
+        'In Islamic culture, time is also structured around prayer times. How is this similar to ancient Chinese time structure?'
+      ],
+      hint:'Connect ancient Chinese culture to modern life — and think about your own daily schedule.' },
+  ]},
+]},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LESSON 5 · 今天二月一号。日期
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ id:'1B-L5', num:'Lesson 5', title:'Today is February 1st. Date', cn:'日期',
+  tiers:[
+  { qs:[
+    { type:'mc', stem:'<span class="cn">今天几月几号？</span> means:', choices:['What is the date today?','What time is it today?','What day is today?','What month is this?'], ans:0, hint:'几月 = which month, 几号 = which date (number)' },
+    { type:'mc', stem:'<span class="cn">号</span> in dates means:', choices:['day/date (spoken Chinese)','month','year','hour'], ans:0, hint:'号 = spoken form for dates; 日 = written/formal form' },
+    { type:'mc', stem:'How do you say "February" in Chinese?', choices:['二月','月二','第二月','两月'], ans:0, hint:'Months in Chinese: number + 月; February = 二月 (the second month)' },
+    { type:'mc', stem:'<span class="cn">今年</span> means:', choices:['this year','last year','next year','every year'], ans:0, hint:'今 = present; 年 = year — 今年 = this year; 去年 = last year; 明年 = next year' },
+    { type:'mc', stem:'The correct order for a full date in Chinese is:', choices:['Year + Month + Day (年/月/号)','Day + Month + Year','Month + Day + Year','Day + Year + Month'], ans:0, hint:'Chinese date order: 年(year) → 月(month) → 号/日(day) — largest to smallest unit' },
+    { type:'mc', stem:'<span class="cn">今天二月一号。</span> — What sentence type is this?', choices:['名词谓语句 (noun predicate sentence without 是)','动词谓语句 (verb predicate)','是字句 with 是','比较句 with 比'], ans:0, hint:'HSK1: 名词谓语句 — the date phrase acts directly as predicate; no 是 needed' },
+    { type:'fill', stem:'Say "Today is March 15th": <span class="cn">今天＿＿月＿＿号。</span>', ans:['三，十五','三十五'], hint:'三月十五号 = March 15th; 三 = March (3rd month)' },
+    { type:'match', stem:'Match month to Chinese', left:['January','April','August','December'], right:['一月','四月','八月','十二月'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Months = number (1–12) + 月; very regular in Chinese' },
+    { type:'mc', stem:'What is the Chinese for "2025, January 10th"?', choices:['二零二五年一月十号','一月十号二零二五年','十号一月二零二五年','二零二五年十号一月'], ans:0, hint:'Year first, then month, then day: 年 → 月 → 号' },
+    { type:'fill', stem:'Ask what year it is: <span class="cn">今年是哪＿＿？</span>', ans:['年'], hint:'哪年 = which year; 今年是哪年？ = What year is it?' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'<span class="cn">今天二月一号。</span> uses 名词谓语句. The key feature is:', choices:['The date phrase acts as predicate without a copula verb (是)','是 is implied but invisible','二月一号 is an adjective','The sentence has no subject'], ans:0, hint:'HSK1: 名词谓语句 — noun phrase as predicate, same structure as 今天星期四 in 1A L6' },
+    { type:'mc', stem:'<span class="cn">号</span> vs <span class="cn">日</span> — when is each used for dates?', choices:['号 in spoken Chinese; 日 in written/formal contexts','They are interchangeable in all contexts','日 in spoken; 号 in written','Only 号 is correct; 日 is archaic'], ans:0, hint:'HSK1: 日 as 量词 (formal/written); 号 as 名词/量词 (spoken); both mean day/date' },
+    { type:'fill', stem:'Give today\'s full date: <span class="cn">今天是二零二五年＿＿月一号。</span>', ans:['一','二','三','四','五','六','七','八','九','十','十一','十二'], hint:'Any month number is acceptable — focus on the pattern: year + month + date' },
+    { type:'mc', stem:'In Chinese, dates are written largest to smallest (年→月→号). This is:', choices:['The same as the ISO 8601 standard (YYYY-MM-DD)','The opposite of English (Day/Month/Year)','Unique to Chinese — no other system does this','Only used in ancient Chinese texts'], ans:0, hint:'Chinese date order matches international ISO format: Year-Month-Day — logical progression' },
+    { type:'mc', stem:'Culture: 中阿节日 — the UAE and China both celebrate major festivals. Chinese New Year (春节) usually falls in which period?', choices:['Late January to mid-February (lunar calendar)','January 1st always','March 21st (spring equinox)','December 25th'], ans:0, hint:'文化点: 春节 follows the lunar calendar (农历) — usually late Jan to mid-Feb in the Gregorian calendar' },
+    // READING
+    { type:'reading',
+      passage:'今天是二月一号，星期六。这是一个特别的日子——春节就要到了！小华告诉我，中国的春节是农历新年，时间每年不一样，通常在一月下旬或者二月初。今年春节是二月十号。在中国，春节是最重要的节日，家人会团聚在一起。在阿联酋，我们有国庆节（十二月二日）和开斋节。我们也很重视家人团聚。小华说：\"今天二月一号，再过九天就是春节了！\"',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What is the date in the passage?',
+      choices:['February 1st / 二月一号','January 1st / 一月一号','February 10th / 二月十号','December 2nd / 十二月二号'],
+      ans:0, hint:'今天是二月一号' },
+    { type:'reading',
+      passage:'今天是二月一号，星期六。这是一个特别的日子——春节就要到了！小华告诉我，中国的春节是农历新年，时间每年不一样，通常在一月下旬或者二月初。今年春节是二月十号。在中国，春节是最重要的节日，家人会团聚在一起。在阿联酋，我们有国庆节（十二月二日）和开斋节。我们也很重视家人团聚。小华说：\"今天二月一号，再过九天就是春节了！\"',
+      passageLabel:'Reading · 阅读理解',
+      stem:'When is Chinese New Year (春节) this year according to the passage?',
+      choices:['February 10th / 二月十号','February 1st / 二月一号','January 1st / 一月一号','March 1st / 三月一号'],
+      ans:0, hint:'今年春节是二月十号' },
+    { type:'reading',
+      passage:'今天是二月一号，星期六。这是一个特别的日子——春节就要到了！小华告诉我，中国的春节是农历新年，时间每年不一样，通常在一月下旬或者二月初。今年春节是二月十号。在中国，春节是最重要的节日，家人会团聚在一起。在阿联酋，我们有国庆节（十二月二日）和开斋节。我们也很重视家人团聚。小华说：\"今天二月一号，再过九天就是春节了！\"',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What is the UAE National Day date mentioned in the passage?',
+      choices:['December 2nd / 十二月二日','February 1st / 二月一号','February 10th / 二月十号','January 1st / 一月一号'],
+      ans:0, hint:'国庆节（十二月二日）' },
+    { type:'reading',
+      passage:'今天是二月一号，星期六。这是一个特别的日子——春节就要到了！小华告诉我，中国的春节是农历新年，时间每年不一样，通常在一月下旬或者二月初。今年春节是二月十号。在中国，春节是最重要的节日，家人会团聚在一起。在阿联酋，我们有国庆节（十二月二日）和开斋节。我们也很重视家人团聚。小华说：\"今天二月一号，再过九天就是春节了！\"',
+      passageLabel:'Reading · 阅读理解',
+      stem:'How many days until Spring Festival from the date in the passage?',
+      choices:['9 days / 九天','10 days / 十天','5 days / 五天','1 day / 一天'],
+      ans:0, hint:'再过九天就是春节了！— 九天 = 9 days' },
+    { type:'hots',
+      stem:'China uses two calendar systems: the Gregorian calendar (公历) for official dates, and the lunar calendar (农历) for traditional festivals like Spring Festival (春节). The UAE uses the Gregorian calendar officially but also follows the Islamic Hijri calendar (هجري) for religious dates like Eid. <span class="cn">两个国家都用两种历法。</span> Why do you think countries maintain two calendar systems? What challenges does this create, and what cultural value does it preserve?',
+      prompts:[
+        'Think: why would a country keep an ancient calendar system when the whole world uses the Gregorian calendar?',
+        'Spring Festival moves every year in the Gregorian calendar. Eid also moves. How does this affect planning for schools and businesses?',
+        'If you had to design a new universal calendar that everyone in the world could use, what would it look like?'
+      ],
+      hint:'Think about identity, tradition, practicality, and globalisation — all connected through the concept of dates and time.' },
+  ]},
+]},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LESSON 6 · 祝你生日快乐！生日
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ id:'1B-L6', num:'Lesson 6', title:'Happy birthday to you! Birthday', cn:'生日',
+  tiers:[
+  { qs:[
+    { type:'mc', stem:'<span class="cn">祝你生日快乐！</span> means:', choices:['Happy birthday to you!','Good luck to you!','I wish you success!','Congratulations!'], ans:0, hint:'祝 = wish, 你 = you, 生日 = birthday, 快乐 = happy' },
+    { type:'mc', stem:'<span class="cn">生日</span> means:', choices:['birthday','gift','party','cake'], ans:0, hint:'生 = born/life, 日 = day — 生日 = the day you were born = birthday' },
+    { type:'mc', stem:'<span class="cn">快乐</span> means:', choices:['happy','lucky','excited','healthy'], ans:0, hint:'快 = quick/pleasant, 乐 = joy — 快乐 = happy/joyful' },
+    { type:'mc', stem:'<span class="cn">礼物</span> means:', choices:['gift/present','cake','party','greeting card'], ans:0, hint:'礼 = ritual/etiquette, 物 = thing — 礼物 = gift' },
+    { type:'mc', stem:'To ask "When is your birthday?", you say:', choices:['你的生日是几月几号？','你什么时候出生？','你的生日快乐吗？','几号是你的生日？'], ans:0, hint:'几月 = which month, 几号 = which date — 你的生日是几月几号？' },
+    { type:'mc', stem:'<span class="cn">祝</span> in 祝你生日快乐 is:', choices:['a verb meaning "to wish"','an adjective meaning "lucky"','a noun meaning "celebration"','an adverb meaning "very much"'], ans:0, hint:'祝 = to wish (someone well) — 祝你…… = I wish you……' },
+    { type:'fill', stem:'Complete: <span class="cn">祝你生日＿＿！</span>', ans:['快乐'], hint:'生日快乐！= Happy birthday! — the standard Chinese birthday wish' },
+    { type:'match', stem:'Match Chinese birthday vocabulary', left:['生日','快乐','礼物','祝'], right:['birthday','happy','gift','to wish'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Core Lesson 6 vocabulary' },
+    { type:'mc', stem:'<span class="cn">中国人的生日习俗</span> — which is a common Chinese birthday tradition?', choices:['Eating noodles (长寿面) for long life','Blowing out candles on a cake only','Wearing all red clothing','No celebration at all'], ans:0, hint:'文化点: 长寿面 (longevity noodles) — long noodles symbolise long life; eaten on birthdays' },
+    { type:'fill', stem:'Say "My birthday is April 5th": <span class="cn">我的生日是四月＿＿号。</span>', ans:['五'], hint:'五号 = 5th; 四月 = April (4th month)' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'<span class="cn">祝你生日快乐！</span> — 祝 here introduces:', choices:['兼语句 pattern: Subject + 祝 + indirect object + wish','是字句 expressing identity','有字句 expressing possession','比较句 expressing comparison'], ans:0, hint:'HSK2: 兼语句¹ — 祝(V) + 你(indirect obj / subject of next clause) + 生日快乐(complement)' },
+    { type:'mc', stem:'In Chinese birthday culture, 长寿面 (longevity noodles) symbolise long life because:', choices:['The long, unbroken noodles represent a long, continuous life','Noodles are the cheapest birthday food','Noodles are easy to make for large groups','The word 面 sounds like 年 (year)'], ans:0, hint:'文化: 长 = long, 寿 = longevity/life — long noodles = long life; cannot cut them' },
+    { type:'fill', stem:'Complete a birthday wish: <span class="cn">祝你＿＿＿＿快乐！</span>', ans:['生日'], hint:'生日快乐 = happy birthday' },
+    { type:'mc', stem:'<span class="cn">我想送你一个礼物。</span> — 送 means:', choices:['to give/send (a gift to someone)','to buy','to receive','to make'], ans:0, hint:'HSK2: 送 = to give/present a gift; 双宾语句: Subject + 送 + recipient + gift' },
+    { type:'mc', stem:'Which structure correctly expresses "I want to give you a gift"?', choices:['我想送你一个礼物。','我想你送一个礼物。','我送想你一个礼物。','我一个礼物想送你。'], ans:0, hint:'HSK2: 双宾语句²: Subject + 送 + person (indirect object) + gift (direct object)' },
+    { type:'mc', stem:'In Chinese culture, which gift is considered taboo on birthdays and why?', choices:['A clock (钟) — 送钟 sounds like 送终 (attending a funeral)','A book — because reading is tiring','Green tea — the colour is unlucky','Anything round — circles mean zero'], ans:0, hint:'文化: 送钟(sòng zhōng) sounds like 送终(sòng zhōng) = to attend a funeral — sound taboo' },
+    { type:'match', stem:'Match birthday gift vocabulary', left:['送礼物','祝寿','长寿面','生日快乐'], right:['to give a gift','to celebrate an elder\'s birthday','longevity noodles','happy birthday'], pairs:[[0,0],[1,1],[2,2],[3,3]], hint:'Birthday culture and vocabulary from Lesson 6' },
+    { type:'fill', stem:'Ask "What do you want for your birthday?": <span class="cn">你生日想要什么＿＿＿？</span>', ans:['礼物'], hint:'礼物 = gift; 想要 = want to have' },
+    { type:'mc', stem:'<span class="cn">快乐</span> is grammatically a:', choices:['形容词 (adjective) meaning happy','动词 (verb) meaning to laugh','副词 (adverb) meaning quickly','名词 (noun) meaning joy only'], ans:0, hint:'HSK2: 快乐 = 形容词; can also function predicatively: 她很快乐' },
+    { type:'mc', stem:'Which correctly uses the 双宾语句 structure with 送?', choices:['我送她一本书。','我送一本书她。','送她我一本书。','她一本书我送。'], ans:0, hint:'双宾语句: Subject + 送 + person + thing; 我(S)送(V)她(person)一本书(thing)' },
+  ]},
+  { qs:[
+    { type:'mc', stem:'<span class="cn">祝你生日快乐</span> contains the structure Subject + 祝 + Object + Complement. Grammatically this is:', choices:['兼语句: 你 is both the object of 祝 and the subject of 生日快乐 (expressed or implied)','双宾语句: two direct objects','是字句: expressing identity','比较句: expressing comparison'], ans:0, hint:'HSK2: 兼语句¹ (pivot sentence): 祝(V1) 你(pivot) 生日快乐(V2/adj predicate)' },
+    { type:'mc', stem:'Why do many Chinese birthday taboos involve sound associations (音译禁忌)?', choices:['Chinese is a tonal language with many homophones, making sound associations culturally powerful','Chinese people are superstitious without reason','The government imposed birthday rules','Chinese has very few words, so sounds must be shared'], ans:0, hint:'The logosyllabic nature of Chinese: many different characters share the same sound; 送钟≈送终, 梨≈离 etc.' },
+    { type:'fill', stem:'Complete: <span class="cn">我想送你一个＿＿＿＿。祝你生日快乐！</span>', ans:['礼物'], hint:'礼物 = gift — the direct object in the 双宾语句' },
+    { type:'mc', stem:'In Chinese, the birthday song <span class="cn">生日快乐歌</span> is based on the Western "Happy Birthday" melody. What does this tell us about Chinese cultural exchange?', choices:['China has integrated global cultural practices while maintaining its own traditions (like longevity noodles)','China has completely abandoned its birthday traditions','The birthday song is originally Chinese','Western and Chinese birthday culture are completely identical'], ans:0, hint:'文化交流: globalisation has spread Western pop culture (cake, song) while Chinese traditions (面条, 红包) persist' },
+    { type:'mc', stem:'The 双宾语句 structure with 送 vs 给 — what is the difference?', choices:['Both can introduce two objects; 送 specifically means giving a gift/delivering; 给 means giving in general','送 and 给 are completely interchangeable','给 only appears in questions','送 requires an animate indirect object; 给 does not'], ans:0, hint:'HSK2: 送 = send/give (as a present); 给 = give (general); both use 双宾语句 pattern' },
+    // READING
+    { type:'reading',
+      passage:'今天是小华的生日。他十三岁了。他的朋友们来为他庆祝。阿里送给他一个礼物——一本关于中国历史的书。小华非常开心！他们一起唱了生日快乐歌：\"祝你生日快乐，祝你生日快乐！\"小华的妈妈做了长寿面，因为长寿面代表长寿和健康。小华许了一个愿望：\"我希望我们的友谊长久，就像长寿面一样长！\"大家都笑了，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'How old is Xiao Hua today?',
+      choices:['13 years old / 十三岁','12 years old / 十二岁','14 years old / 十四岁','11 years old / 十一岁'],
+      ans:0, hint:'他十三岁了' },
+    { type:'reading',
+      passage:'今天是小华的生日。他十三岁了。他的朋友们来为他庆祝。阿里送给他一个礼物——一本关于中国历史的书。小华非常开心！他们一起唱了生日快乐歌：\"祝你生日快乐，祝你生日快乐！\"小华的妈妈做了长寿面，因为长寿面代表长寿和健康。小华许了一个愿望：\"我希望我们的友谊长久，就像长寿面一样长！\"大家都笑了，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What gift did Ali give Xiao Hua?',
+      choices:['A book about Chinese history / 一本关于中国历史的书','A birthday cake','A gift card','Longevity noodles'],
+      ans:0, hint:'阿里送给他一个礼物——一本关于中国历史的书' },
+    { type:'reading',
+      passage:'今天是小华的生日。他十三岁了。他的朋友们来为他庆祝。阿里送给他一个礼物——一本关于中国历史的书。小华非常开心！他们一起唱了生日快乐歌：\"祝你生日快乐，祝你生日快乐！\"小华的妈妈做了长寿面，因为长寿面代表长寿和健康。小华许了一个愿望：\"我希望我们的友谊长久，就像长寿面一样长！\"大家都笑了，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'Why did Xiao Hua\'s mother make longevity noodles (长寿面)?',
+      choices:['Because they represent longevity and good health','Because they are Xiao Hua\'s favourite food','Because they are cheap and easy to make','Because it is a Western birthday tradition'],
+      ans:0, hint:'因为长寿面代表长寿和健康' },
+    { type:'reading',
+      passage:'今天是小华的生日。他十三岁了。他的朋友们来为他庆祝。阿里送给他一个礼物——一本关于中国历史的书。小华非常开心！他们一起唱了生日快乐歌：\"祝你生日快乐，祝你生日快乐！\"小华的妈妈做了长寿面，因为长寿面代表长寿和健康。小华许了一个愿望：\"我希望我们的友谊长久，就像长寿面一样长！\"大家都笑了，非常快乐！',
+      passageLabel:'Reading · 阅读理解',
+      stem:'What wish does Xiao Hua make?',
+      choices:['He wishes for his friendship to last long, just like long noodles','He wishes for good grades at school','He wishes to go back to China','He wishes for more birthday gifts'],
+      ans:0, hint:'我希望我们的友谊长久，就像长寿面一样长！' },
+    // HOTS Q10
+    { type:'hots',
+      stem:'In China, birthdays are celebrated with 长寿面 (longevity noodles) and traditional songs, but also with Western-style birthday cakes and the "Happy Birthday" song. In the UAE, birthdays are celebrated with family gatherings and gifts. <span class="cn">不同文化有不同的生日习俗。</span> What do birthday celebrations tell us about a culture\'s values? Is it positive or negative that many countries around the world now celebrate birthdays in similar ways (cake, candles, song)? Does globalisation make us lose our cultural identity?',
+      prompts:[
+        'Think: what would you find at a "typical" Chinese birthday vs a "typical" Emirati birthday vs a "typical" Western birthday?',
+        'Is the spread of Western birthday traditions (like birthday cake) cultural exchange or cultural imperialism?',
+        'What is one birthday tradition from your culture that you hope will never disappear, and why?'
+      ],
+      hint:'Connect your personal experience with Chinese, Emirati, and global cultural perspectives.' },
+  ]},
+]},
+
+]; // END LESSONS
+
+// ── State ──
+let selectedLesson = 0, selectedTier = 0;
+let currentQs = [], qIndex = 0, score = 0;
+let timerInterval = null, secondsLeft = 900;
+let responses = []; // stores {userIdx/userText/correct/...} per question
+
+// ── Build Setup UI ──
+function buildSetup() {
+  const grid = document.getElementById('lessonGrid');
+  grid.innerHTML = LESSONS.map((l, i) =>
+    `<div class="lesson-card ${i===0?'active':''}" id="lc${i}" onclick="selectLesson(${i})">
+      <div class="lc-num">${l.num}</div>
+      <div class="lc-title">${l.title}</div>
+      <div class="lc-cn">${l.cn}</div>
+    </div>`
+  ).join('');
+  // Populate mobile lesson dropdown
+  const sel = document.getElementById('lessonSelect');
+  if (sel) {
+    sel.innerHTML = LESSONS.map((l, i) =>
+      `<option value="${i}">${l.num} · ${l.cn} (${l.title})</option>`
+    ).join('');
+    sel.value = '0';
+  }
+}
+
+function selectLesson(i) {
+  selectedLesson = i;
+  document.querySelectorAll('.lesson-card').forEach((el,j) => el.classList.toggle('active', j===i));
+}
+
+function setTier(i) {
+  selectedTier = i;
+  [0,1,2].forEach(j => {
+    const el = document.getElementById(`tc${j}`);
+    el.className = `tier-card ${'t1 t2 t3'.split(' ')[j]}${j===i?' active':''}`;
+  });
+}
+
+// ── Quiz Logic ──
+function startQuiz() {
+  const lesson = LESSONS[selectedLesson];
+  currentQs = lesson.tiers[selectedTier].qs.map(q => Object.assign({}, q));
+  qIndex = 0; score = 0;
+  responses = new Array(currentQs.length).fill(null);
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('studentInfoScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'block';
+  const tierColors = ['tb-t1','tb-t2','tb-t3'];
+  const tierNames = ['Tier 1 · 迈向掌握','Tier 2 · 达到掌握','Tier 3 · 深度掌握'];
+  document.getElementById('qBadge').className = 'tier-badge ' + tierColors[selectedTier];
+  document.getElementById('qBadge').textContent = tierNames[selectedTier];
+  document.getElementById('progressFill').className = 'progress-fill ' + ['pf-t1','pf-t2','pf-t3'][selectedTier];
+  secondsLeft = 900;
+  startTimer();
+  renderQuestion();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  updateTimer();
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    updateTimer();
+    if (secondsLeft <= 0) { clearInterval(timerInterval); showResult(); }
+  }, 1000);
+}
+
+function updateTimer() {
+  const m = Math.floor(secondsLeft/60), s = secondsLeft%60;
+  const el = document.getElementById('timerDisplay');
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  const w = document.getElementById('timerWrap');
+  w.className = 'timer-wrap' + (secondsLeft<=120?' timer-urgent':secondsLeft<=240?' timer-warn':'');
+}
+
+function renderQuestion() {
+  const q = currentQs[qIndex];
+  document.getElementById('qCounter').textContent = `${qIndex+1} / ${currentQs.length}`;
+  const pct = (qIndex / currentQs.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  const mount = document.getElementById('qMount');
+
+  if ((q.type === 'mc' || q.type === 'reading') && q._rot === undefined) {
+    q._rot = qIndex % 4;
+    const rot = q._rot;
+    const origAns = q.ans;
+    const newChoices = [];
+    const others = q.choices.filter((_, i) => i !== origAns);
+    for (let i = 0; i < 4; i++) {
+      if (i === rot) newChoices.push(q.choices[origAns]);
+      else newChoices.push(others.shift());
+    }
+    q._choices = newChoices;
+    q._ans = rot;
+  }
+
+  const typeLabels = {
+    mc: 'Multiple choice · 选择题',
+    fill: 'Fill in · 填空题',
+    match: 'Match · 连线题',
+    reading: 'Reading comprehension · 阅读理解',
+    hots: 'Critical thinking · 批判性思维'
+  };
+
+  let html = `<div class="q-card">
+    <div class="q-type-tag">${typeLabels[q.type] || q.type}</div>`;
+
+  if (q.type === 'reading') {
+    const pid = `pinyin_${qIndex}`;
+    const passageWithPinyin = buildPassageWithPinyin(q.passage);
+    html += `<div class="pinyin-toggle-row">
+      <span class="reading-label" style="margin:0;">${q.passageLabel || 'Reading · 阅读理解'}</span>
+      <span style="flex:1"></span>
+      <span class="pinyin-toggle-label">拼音</span>
+      <label class="pinyin-switch">
+        <input type="checkbox" id="${pid}" onchange="togglePassagePinyin(this,'passage_${qIndex}')">
+        <span class="pinyin-slider"></span>
+      </label>
+    </div>
+    <div class="reading-passage passage-nopinyin" id="passage_${qIndex}">${passageWithPinyin}</div>`;
+  }
+
+  if (q.type === 'hots') {
+    html += `<div class="hots-box">
+      <div class="hots-label">Critical / Creative Thinking · 批判性思维</div>
+      <div class="q-stem">${q.stem}</div>
+      <div class="hots-prompts">
+        ${q.prompts.map(p => `<div class="hots-prompt">💡 ${p}</div>`).join('')}
+      </div>
+    </div>
+    <div class="hint-toggle" onclick="toggleHint(this,'hint_${qIndex}')">
+      <span>💡 Show hint · 查看提示</span><span class="ht-arrow">▼</span>
+    </div>
+    <div class="hint-body" id="hint_${qIndex}">${q.hint}</div>
+    <textarea class="hots-open-input" id="hotsInput" placeholder="Write your thoughts here (minimum 30 characters) · 在这里写下你的想法（至少30个字符）…"></textarea>
+    <button class="hots-submit-btn" onclick="submitHOTS()">Submit · 提交</button>
+    <div class="hots-submitted" id="hotsSubmitted">✓ Response recorded · 已记录</div>`;
+  } else {
+    html += `<div class="q-stem">${q.stem}</div>`;
+    html += `<div class="hint-toggle" onclick="toggleHint(this,'hint_${qIndex}')">
+      <span>💡 Show hint · 查看提示</span><span class="ht-arrow">▼</span>
+    </div>
+    <div class="hint-body" id="hint_${qIndex}">${q.hint}</div>`;
+  }
+
+  if (q.type === 'mc' || q.type === 'reading') {
+    const keys = ['A','B','C','D'];
+    const displayChoices = q._choices || q.choices;
+    const displayAns = (q._ans !== undefined) ? q._ans : q.ans;
+    html += `<div class="options-grid">` + displayChoices.map((c,i) =>
+      `<button class="opt-btn" id="opt${i}" onclick="answerMC(${i},${displayAns})">
+        <span class="opt-key">${keys[i]}</span><span class="opt-text">${c}</span>
+      </button>`).join('') + `</div>`;
+  } else if (q.type === 'fill') {
+    html += `<div class="fill-wrap">
+      <input class="fill-input" id="fillIn" placeholder="Type your answer here · 在此输入答案" onkeydown="if(event.key==='Enter')checkFill()">
+      <button class="submit-btn" onclick="checkFill()">提交 Submit</button>
+    </div>`;
+  } else if (q.type === 'match') {
+    const shuffled = [...q.right].sort(() => Math.random() - .5);
+    html += `<div class="match-wrap">
+      <div><div class="match-col-label">Chinese 中文</div><div class="match-col">` +
+      q.left.map((l,i) => `<div class="match-item" id="ml${i}" onclick="selectMatchLeft(${i})">${l}</div>`).join('') +
+      `</div></div><div><div class="match-col-label">English 英文</div><div class="match-col">` +
+      shuffled.map((r,i) => `<div class="match-item" id="mr${i}" onclick="selectMatchRight(${i},'${r.replace(/'/g,"\\'")}')" data-val="${r.replace(/"/g,'&quot;')}">${r}</div>`).join('') +
+      `</div></div></div><button class="match-check-btn" onclick="checkMatch()">Check 检查</button>`;
+    window._shuffled = shuffled; window._matchCorrect = {}; window._matchPairs = {}; window._matchSelected = { l:null, r:null };
+  }
+
+  if (q.type !== 'hots') {
+    html += `<div class="feedback" id="fb"></div>`;
+  }
+
+  html += `</div>
+  <button class="next-btn" id="nextBtn" onclick="nextQ()">${qIndex < currentQs.length-1 ? '下一题 Next →' : '查看成绩 See results →'}</button>`;
+  mount.innerHTML = html;
+}
+
+// ── PINYIN DICTIONARY — word-level, for 1B reading passages ──────
+const PINYIN_DICT = {
+  // ── Names ──────────────────────────────────────────────────────
+  '小华':'Xiǎohuá','小红':'Xiǎohóng','小明':'Xiǎomíng','小雨':'Xiǎoyǔ',
+  '阿里':'Ālǐ','法蒂玛':'Fǎdìmǎ','哈立德':'Hālìdé','莎拉':'Shālā',
+  '穆罕默德':'Mùhǎnmòdé',
+  // ── Countries & cities ─────────────────────────────────────────
+  '中国':'Zhōngguó','阿联酋':'Āliánqiú','迪拜':'Díbài','上海':'Shànghǎi',
+  '中国人':'Zhōngguórén','阿联酋人':'Āliánqiúrén',
+  // ── Multi-char family terms (greedy-matched first) ─────────────
+  '独生子女':'dúshēng zǐnǚ','兄弟姐妹':'xiōngdì jiěmèi',
+  '大家庭':'dà jiātíng','大家好':'dàjiā hǎo',
+  '家庭':'jiātíng','家人':'jiārén','孩子':'háizi',
+  '爸爸':'bàba','妈妈':'māma','哥哥':'gēge','弟弟':'dìdi',
+  '姐姐':'jiějie','妹妹':'mèimei','爷爷':'yéye','奶奶':'nǎinai',
+  '兄弟':'xiōngdì','姐妹':'jiěmèi',
+  // ── Multi-char verbs & phrases ─────────────────────────────────
+  '送给':'sòng gěi','许愿':'xǔ yuàn','代表':'dàibiǎo',
+  '庆祝':'qìngzhù','做作业':'zuò zuòyè','吃饭':'chīfàn',
+  '起床':'qǐchuáng','睡觉':'shuìjiào','放学':'fàngxué',
+  '下课':'xiàkè','上课':'shàngkè','上学':'shàngxué',
+  '介绍':'jièshào','来自':'láizì','住在':'zhùzài',
+  '知道':'zhīdào','觉得':'juéde','没有':'méiyǒu','不是':'bú shì',
+  '开始':'kāishǐ','开心':'kāixīn','开斋节':'Kāizhāijié',
+  '继续':'jìxù','羡慕':'xiànmù','团聚':'tuánjù',
+  '重视':'zhòngshì','改变':'gǎibiàn','告诉':'gàosu',
+  '希望':'xīwàng','喜欢':'xǐhuan','唱歌':'chànggē',
+  '笑了':'xiào le',
+  // ── Time multi-char ────────────────────────────────────────────
+  '时间表':'shíjiānbiǎo','时间':'shíjiān','时候':'shíhou',
+  '现在':'xiànzài','早上':'zǎoshang','上午':'shàngwǔ',
+  '中午':'zhōngwǔ','下午':'xiàwǔ','晚上':'wǎnshang',
+  '今天':'jīntiān','明天':'míngtiān','昨天':'zuótiān',
+  '今年':'jīnnián','去年':'qùnián','明年':'míngnián',
+  '每天':'měitiān','下旬':'xià xún','一起':'yìqǐ',
+  // ── Months ─────────────────────────────────────────────────────
+  '十一月':'shíyīyuè','十二月':'shíèryuè','十月':'shíyuè',
+  '一月':'yīyuè','二月':'èryuè','三月':'sānyuè','四月':'sìyuè',
+  '五月':'wǔyuè','六月':'liùyuè','七月':'qīyuè','八月':'bāyuè',
+  '九月':'jiǔyuè',
+  // ── Festivals & culture ────────────────────────────────────────
+  '春节':'Chūnjié','农历':'nónglì','国庆节':'Guóqìngjié',
+  '生日快乐':'shēngrì kuàilè','长寿面':'cháng shòu miàn',
+  '生日':'shēngrì','节日':'jiérì',
+  // ── Numbers & measures ─────────────────────────────────────────
+  '五口人':'wǔ kǒu rén','口人':'kǒu rén',
+  '一个':'yī gè','两个':'liǎng gè','三个':'sān gè',
+  '四个':'sì gè','五个':'wǔ gè',
+  '十三':'shísān','十二':'shí\'èr','十五':'shíwǔ',
+  '九天':'jiǔ tiān','两点':'liǎng diǎn','四点':'sì diǎn',
+  '七点':'qī diǎn','八点':'bā diǎn','九点':'jiǔ diǎn',
+  '十点':'shí diǎn','十二点':'shí\'èr diǎn',
+  '六点':'liù diǎn','五口':'wǔ kǒu',
+  // ── Pronouns & core function words ────────────────────────────
+  '大家':'dàjiā','我们':'wǒmen','你们':'nǐmen','他们':'tāmen',
+  '我':'wǒ','你':'nǐ','他':'tā','她':'tā','您':'nín',
+  '这':'zhè','那':'nà',
+  // ── Adverbs & conjunctions ────────────────────────────────────
+  '非常':'fēicháng','因为':'yīnwèi','所以':'suǒyǐ','但是':'dànshì',
+  '如果':'rúguǒ','然后':'ránhòu','或者':'huòzhě',
+  '通常':'tōngcháng','特别':'tèbié',
+  '很':'hěn','也':'yě','都':'dōu','不':'bù','没':'méi',
+  '再':'zài','最':'zuì','别':'bié','以':'yǐ',
+  // ── Adjectives ───────────────────────────────────────────────
+  '快乐':'kuàilè','高兴':'gāoxìng','幸福':'xìngfú',
+  '健康':'jiànkāng','相似':'xiāngsì','重要':'zhòngyào',
+  '规律':'guīlǜ','独特':'dútè',
+  // ── Common nouns ────────────────────────────────────────────
+  '礼物':'lǐwù','友谊':'yǒuyì','历史':'lìshǐ',
+  '政策':'zhèngcè','活动':'huódòng','生活':'shēnghuó',
+  '习俗':'xísú','文化':'wénhuà','故事':'gùshi',
+  '年级':'niánjí','初中':'chūzhōng',
+  '书':'shū','歌':'gē',
+  // ── People & social ────────────────────────────────────────
+  '老师':'lǎoshī','医生':'yīshēng','学生':'xuéshēng',
+  '好朋友':'hǎo péngyou','朋友':'péngyou',
+  '同学们':'tóngxuémen','同学':'tóngxué','学校':'xuéxiào',
+  // ── Verbs (single-char catches after multi-char matched) ──────
+  '爱':'ài','有':'yǒu','是':'shì','在':'zài',
+  '叫':'jiào','说':'shuō','问':'wèn','和':'hé',
+  '祝':'zhù','讲':'jiǎng','诉':'sù','过':'guò',
+  '来':'lái','去':'qù','给':'gěi','到':'dào',
+  '做':'zuò','吃':'chī','唱':'chàng','笑':'xiào',
+  '起':'qǐ','开':'kāi','生':'shēng','下':'xià',
+  '还':'hái','了':'le','的':'de','家':'jiā',
+  '子':'zi','好':'hǎo','就':'jiù','点':'diǎn',
+  '大':'dà','多':'duō','天':'tiān','年':'nián',
+  '日':'rì','号':'hào','半':'bàn','样':'yàng',
+  '长':'cháng','重':'zhòng','为':'wèi',
+  // ── Numbers (single) ─────────────────────────────────────────
+  '一':'yī','二':'èr','三':'sān','四':'sì','五':'wǔ',
+  '六':'liù','七':'qī','八':'bā','九':'jiǔ','十':'shí',
+  '两':'liǎng','百':'bǎi','千':'qiān',
+  // ── Remaining single chars ────────────────────────────────────
+  '每':'měi','本':'běn','期':'qī','星':'xīng',
+  '旬':'xún','早':'zǎo','新':'xīn','初':'chū',
+  '于':'yú','以':'yǐ','前':'qián','后':'hòu',
+  '常':'cháng','久':'jiǔ','寿':'shòu','岁':'suì',
+  '希':'xī','愿':'yuàn','慕':'mù','羡':'xiàn',
+  '团':'tuán','聚':'jù','视':'shì','望':'wàng',
+  '告':'gào','改':'gǎi','政':'zhèng','策':'cè',
+  '续':'xù','继':'jì','特':'tè','通':'tōng',
+  '关':'guān','史':'shǐ','活':'huó','独':'dú',
+  '们':'men','会':'huì','像':'xiàng','书':'shū',
+  '始':'shǐ','喜':'xǐ','欢':'huān','饭':'fàn',
+  '晚':'wǎn','要':'yào','或':'huò','许':'xǔ',
+};
+
+function buildPassageWithPinyin(passage) {
+  const plain = passage.replace(/<ruby>/g,'').replace(/<\/ruby>/g,'')
+                        .replace(/<rt>[^<]*<\/rt>/g,'').replace(/<[^>]+>/g,'');
+
+  const keys = Object.keys(PINYIN_DICT).sort((a,b) => b.length - a.length);
+
+  const tokens = [];
+  const PUNCT = /^[。，！？、：；""''「」【】()（）…—\n\r]+/;
+  let i = 0;
+  while (i < plain.length) {
+    if (plain[i] === '\n' || plain[i] === '\r') {
+      tokens.push({ isBreak: true });
+      i++; continue;
+    }
+    const pm = plain.slice(i).match(PUNCT);
+    if (pm) {
+      tokens.push({ ch: pm[0], py: '', isPunct: true });
+      i += pm[0].length; continue;
+    }
+    let matched = false;
+    for (const k of keys) {
+      if (plain.startsWith(k, i)) {
+        tokens.push({ ch: k, py: PINYIN_DICT[k] });
+        i += k.length; matched = true; break;
+      }
+    }
+    if (!matched) {
+      tokens.push({ ch: plain[i], py: '' });
+      i++;
+    }
+  }
+
+  let html = '<div class="passage-body">';
+  for (const t of tokens) {
+    if (t.isBreak) {
+      html += '<span class="w brk"></span>';
+    } else if (t.isPunct) {
+      html += `<span class="w punct"><span class="py"></span><span class="ch">${t.ch}</span></span>`;
+    } else {
+      html += `<span class="w"><span class="py">${t.py}</span><span class="ch">${t.ch}</span></span>`;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function togglePassagePinyin(checkbox, passageId) {
+  const el = document.getElementById(passageId);
+  if (!el) return;
+  if (checkbox.checked) {
+    el.classList.remove('passage-nopinyin');
+  } else {
+    el.classList.add('passage-nopinyin');
+  }
+}
+
+function toggleHint(btn, hintId) {
+  const hintEl = document.getElementById(hintId);
+  if (!hintEl) return;
+  const isOpen = hintEl.classList.contains('show');
+  hintEl.classList.toggle('show', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  btn.querySelector('span:first-child').textContent = isOpen ? '💡 Show hint · 查看提示' : '💡 Hide hint · 隐藏提示';
+}
+
+function answerMC(i, correctIdx) {
+  const q = currentQs[qIndex];
+  const displayChoices = q._choices || q.choices;
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  const isCorrect = i === correctIdx;
+  if (isCorrect) { score++; document.getElementById(`opt${i}`).className = 'opt-btn correct'; }
+  else {
+    document.getElementById(`opt${i}`).className = 'opt-btn wrong';
+    document.getElementById(`opt${correctIdx}`).className = 'opt-btn correct';
+  }
+  playSound(isCorrect ? 'correct' : 'wrong');
+  responses[qIndex] = { userIdx: i, correct: isCorrect, userLabel: displayChoices[i], correctLabel: displayChoices[correctIdx] };
+  showFeedback(isCorrect, displayChoices[correctIdx]);
+  document.getElementById('nextBtn').style.display = 'block';
+}
+
+function checkFill() {
+  const q = currentQs[qIndex];
+  const val = document.getElementById('fillIn').value.trim();
+  const correct = q.ans.some(a => val === a || val.toLowerCase() === a.toLowerCase());
+  document.getElementById('fillIn').className = 'fill-input ' + (correct?'correct':'wrong');
+  document.getElementById('fillIn').disabled = true;
+  document.querySelector('.submit-btn').disabled = true;
+  if (correct) score++;
+  playSound(correct ? 'correct' : 'wrong');
+  responses[qIndex] = { userText: val, correct, correctLabel: q.ans[0] };
+  showFeedback(correct, q.ans[0]);
+  document.getElementById('nextBtn').style.display = 'block';
+}
+
+function selectMatchLeft(i) {
+  window._matchSelected.l = i;
+  document.querySelectorAll('[id^="ml"]').forEach((el,j) => {
+    if (!el.classList.contains('matched')) el.classList.toggle('selected', j===i);
+  });
+  tryMatch();
+}
+
+function selectMatchRight(i, val) {
+  window._matchSelected.r = { i, val };
+  document.querySelectorAll('[id^="mr"]').forEach((el,j) => {
+    if (!el.classList.contains('matched')) el.classList.toggle('selected', j===i);
+  });
+  tryMatch();
+}
+
+function tryMatch() {
+  const { l, r } = window._matchSelected;
+  if (l === null || r === null) return;
+  if (window._matchPairs[l] !== undefined) {
+    const oldRi = window._matchPairs[l];
+    const oldREl = document.getElementById(`mr${oldRi}`);
+    if (oldREl) { oldREl.classList.remove('selected','paired-right'); }
+  }
+  for (const li in window._matchPairs) {
+    if (window._matchPairs[li] === r.i) {
+      document.getElementById(`ml${li}`) && document.getElementById(`ml${li}`).classList.remove('selected','paired-left');
+      delete window._matchPairs[li];
+    }
+  }
+  window._matchPairs[l] = r.i;
+  document.getElementById(`ml${l}`).classList.remove('selected');
+  document.getElementById(`ml${l}`).classList.add('paired-left');
+  document.getElementById(`mr${r.i}`).classList.remove('selected');
+  document.getElementById(`mr${r.i}`).classList.add('paired-right');
+  window._matchSelected = { l:null, r:null };
+}
+
+function checkMatch() {
+  const q = currentQs[qIndex];
+  const pairedCount = Object.keys(window._matchPairs).length;
+  if (pairedCount < q.left.length) {
+    const fb = document.getElementById('fb');
+    if (fb) { fb.className = 'feedback show bad'; fb.textContent = '⚠ 请完成所有配对后再检查 · Please match all pairs before checking'; }
+    return;
+  }
+  let allCorrect = true;
+  for (let li = 0; li < q.left.length; li++) {
+    const ri = window._matchPairs[li];
+    const correctRight = q.right[q.pairs[li][1]];
+    const userRight = window._shuffled[ri];
+    const isCorrect = userRight === correctRight;
+    if (!isCorrect) allCorrect = false;
+    document.getElementById(`ml${li}`).className = 'match-item ' + (isCorrect ? 'matched' : 'wrong-match');
+    document.getElementById(`mr${ri}`).className = 'match-item ' + (isCorrect ? 'matched' : 'wrong-match');
+  }
+  if (allCorrect) score++;
+  playSound(allCorrect ? 'correct' : 'wrong');
+  showFeedback(allCorrect, q.left.map((l,i) => `${l} → ${q.right[q.pairs[i][1]]}`).join(' | '));
+  responses[qIndex] = { correct: allCorrect, correctLabel: q.left.map((l,i) => `${l} → ${q.right[q.pairs[i][1]]}`).join(', ') };
+  document.getElementById('nextBtn').style.display = 'block';
+  document.querySelectorAll('.match-item').forEach(el => el.style.pointerEvents = 'none');
+}
+
+function submitHOTS() {
+  const val = document.getElementById('hotsInput')?.value?.trim() || '';
+  if (val.length < 30) {
+    alert(`Please write at least 30 characters before submitting.\n请至少写30个字符再提交。\n(Current: ${val.length} characters)`);
+    return;
+  }
+  score++;
+  document.getElementById('hotsInput').disabled = true;
+  document.querySelector('.hots-submit-btn').style.display = 'none';
+  document.getElementById('hotsSubmitted').style.display = 'block';
+  responses[qIndex] = { correct: true, userText: val, isOpen: true };
+  document.getElementById('nextBtn').style.display = 'block';
+}
+
+function showFeedback(correct, correctAns) {
+  const fb = document.getElementById('fb');
+  if (!fb) return;
+  fb.className = 'feedback show ' + (correct?'ok':'bad');
+  fb.textContent = correct
+    ? '✓ Correct! 正确！'
+    : `✗ The answer is: ${correctAns || ''} · 正确答案是：${correctAns || ''}`;
+}
+
+function nextQ() {
+  playSound('click');
+  qIndex++;
+  if (qIndex >= currentQs.length) { clearInterval(timerInterval); showResult(); }
+  else renderQuestion();
+}
+
+function showResult() {
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'block';
+  document.getElementById('soundToggleWrap').style.display = 'none';
+  const total = currentQs.length;
+  const pct = Math.round((score/total)*100);
+  const tierColors = ['ring-t1','ring-t2','ring-t3'];
+  document.getElementById('rRing').className = 'result-ring ' + tierColors[selectedTier];
+  document.getElementById('rRing').textContent = `${pct}%`;
+  document.getElementById('rTitle').textContent = score===total ? '优秀！Excellent!' : score>=total*0.7 ? '良好！Good work!' : '继续加油！Keep going!';
+  const tierNames = ['迈向掌握','达到掌握','深度掌握'];
+  const lesson = LESSONS[selectedLesson];
+  const nameTag = studentName ? ` · ${studentName} · ${studentClass}` : '';
+  document.getElementById('rSub').textContent = `${score} / ${total} correct · Tier ${selectedTier+1} · ${tierNames[selectedTier]} · ${lesson.num}: ${lesson.cn}${nameTag}`;
+  document.getElementById('rStars').textContent = score===total?'⭐⭐⭐':score>=total*0.7?'⭐⭐':'⭐';
+  const msgs = [
+    `Your score: <strong>${score}/${total}</strong>. Focus on key vocabulary from this lesson — recognising characters and sentence patterns is your first step. Keep reading aloud! 多读多看，积累词汇。`,
+    `Your score: <strong>${score}/${total}</strong>. You're applying sentence patterns well. Try creating your own sentences using the grammar from this lesson. 尝试自己造句练习！`,
+    `Your score: <strong>${score}/${total}</strong>. Excellent deeper understanding! You worked through extended questions, a reading passage, and a critical thinking challenge. Review any missed points and try expressing ideas in Chinese. 学以致用，继续深化！`,
+  ];
+  document.getElementById('rMsg').innerHTML = msgs[selectedTier];
+  playSound('complete');
+  buildAnalyticsPanel();
+  document.getElementById('studentSurveyWrap').style.display = 'block';
+}
+
+// (buildReviewPanel and toggleReview replaced by buildAnalyticsPanel)
+
+function downloadAnswers() {
+  const lesson = LESSONS[selectedLesson];
+  const tierNames = ['Tier 1 · 迈向掌握','Tier 2 · 达到掌握','Tier 3 · 深度掌握'];
+  const now = new Date().toLocaleString();
+  let txt = `跨越丝路分层习题生成器 · 1B\n`;
+  txt += `Across the Silk Route — Answer Sheet\n`;
+  txt += `${'='.repeat(50)}\n`;
+  txt += `学生 Student: ${studentName||'—'}  班级 Class: ${studentClass||'—'}  学校 School: ${studentSchool||'—'}\n`;
+  txt += `Lesson: ${lesson.num} · ${lesson.title} (${lesson.cn})\n`;
+  txt += `Tier: ${tierNames[selectedTier]}\n`;
+  txt += `Score: ${score} / ${currentQs.length}\n`;
+  txt += `Date: ${now}\n`;
+  txt += `${'='.repeat(50)}\n\n`;
+
+  currentQs.forEach((q, i) => {
+    const r = responses[i];
+    const typeLabels = { mc:'MC 选择', fill:'Fill 填空', match:'Match 连线', reading:'Reading 阅读', hots:'HOTS 思维' };
+    const stemText = q.stem.replace(/<[^>]*>/g,'');
+    txt += `Q${i+1} [${typeLabels[q.type]||q.type}]\n`;
+    txt += `Question: ${stemText}\n`;
+
+    if (q.type === 'mc' || q.type === 'reading') {
+      const displayChoices = q._choices || q.choices;
+      const displayAns = (q._ans !== undefined) ? q._ans : q.ans;
+      txt += `Correct Answer: ${['A','B','C','D'][displayAns]}. ${displayChoices[displayAns]}\n`;
+      if (r) txt += `Your Answer:    ${['A','B','C','D'][r.userIdx]}. ${r.userLabel} ${r.correct?'✓':'✗'}\n`;
+      else txt += `Your Answer:    — Not answered\n`;
+    } else if (q.type === 'fill') {
+      txt += `Correct Answer: ${q.ans.join(' / ')}\n`;
+      txt += `Your Answer:    ${r?.userText || '— Not answered'} ${r?.correct?'✓':'✗'}\n`;
+    } else if (q.type === 'match') {
+      txt += `Correct Pairs:  ${q.left.map((l,j) => `${l} → ${q.right[q.pairs[j][1]]}`).join(' | ')}\n`;
+      txt += `Result:         ${r?.correct ? 'All correct ✓' : 'Not all matched ✗'}\n`;
+    } else if (q.type === 'hots') {
+      txt += `(Open response — no single correct answer)\n`;
+      txt += `Your Response:  ${r?.userText || '— Not submitted'}\n`;
+    }
+    txt += '\n';
+  });
+
+  txt += `${'='.repeat(50)}\n`;
+  txt += `Total Score: ${score} / ${currentQs.length} (${Math.round(score/currentQs.length*100)}%)\n`;
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `答案_${lesson.id}_Tier${selectedTier+1}_${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function retry() {
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('studentSurveyWrap').style.display = 'none';
+  document.getElementById('soundToggleWrap').style.display = 'block';
+  startQuiz();
+}
+
+function exitQuiz() {
+  if (!confirm('确定要中途退出吗？进度将不会保存。\nExit quiz? Your progress will not be saved.')) return;
+  clearInterval(timerInterval);
+  qIndex = 0; score = 0; responses = [];
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('soundToggleWrap').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+}
+
+function goBack() {
+  clearInterval(timerInterval);
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('soundToggleWrap').style.display = 'none';
+  document.getElementById('studentSurveyWrap').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+}
+
+function printWorksheet() {
+  const lesson = LESSONS[selectedLesson];
+  const tierNames = ['Tier 1 · 迈向掌握', 'Tier 2 · 达到掌握', 'Tier 3 · 深度掌握'];
+  const tierLabel = tierNames[selectedTier];
+  const date = new Date().toLocaleDateString('zh-CN');
+
+  function stripTags(s) { return s.replace(/<[^>]*>/g, ''); }
+
+  function buildQHTML(q, idx) {
+    const qn = 'Q' + (idx + 1);
+    const typeMap = { mc: '选择题 MC', fill: '填空题 Fill-in', match: '连线题 Matching', reading: '阅读题 Reading', hots: '思维题 HOTS' };
+    let h = '<div class="pq">';
+    h += '<div class="pq-num">' + qn + ' <span class="pq-type">' + (typeMap[q.type] || q.type) + '</span></div>';
+
+    if (q.type === 'reading') {
+      const passagePlain = (q.passage || '')
+        .replace(/<ruby>/g, '').replace(/<\/ruby>/g, '')
+        .replace(/<rt>[^<]*<\/rt>/g, '').replace(/<[^>]+>/g, '');
+      h += '<div class="ppassage"><div class="ppassage-lbl">📖 ' + (q.passageLabel || '阅读理解') + '</div>' + passagePlain + '</div>';
+      h += '<div class="pq-stem">' + stripTags(q.stem) + '</div>';
+      const choices = q._choices || q.choices || [];
+      h += '<div class="popts">';
+      ['A','B','C','D'].forEach(function(k, ci) {
+        if (choices[ci] !== undefined) h += '<div class="popt"><span class="popt-k">' + k + '.</span> ' + choices[ci] + '</div>';
+      });
+      h += '</div>';
+    } else if (q.type === 'mc') {
+      h += '<div class="pq-stem">' + stripTags(q.stem) + '</div>';
+      const choices = q._choices || q.choices || [];
+      h += '<div class="popts">';
+      ['A','B','C','D'].forEach(function(k, ci) {
+        if (choices[ci] !== undefined) h += '<div class="popt"><span class="popt-k">' + k + '.</span> ' + choices[ci] + '</div>';
+      });
+      h += '</div>';
+    } else if (q.type === 'fill') {
+      h += '<div class="pq-stem">' + stripTags(q.stem) + '</div>';
+      h += '<div class="pline"></div>';
+    } else if (q.type === 'match') {
+      h += '<div class="pq-stem">' + stripTags(q.stem) + '</div>';
+      const rightShuffled = q.right.slice().sort(function() { return Math.random() - 0.5; });
+      h += '<div class="pmatch">';
+      h += '<div class="pmatch-col"><div class="pmatch-hdr">中文</div>' + q.left.map(function(l) { return '<div class="pmatch-item">' + l + '</div>'; }).join('') + '</div>';
+      h += '<div class="pmatch-col"><div class="pmatch-hdr">English</div>' + rightShuffled.map(function(r) { return '<div class="pmatch-item">' + r + '</div>'; }).join('') + '</div>';
+      h += '</div>';
+    } else if (q.type === 'hots') {
+      h += '<div class="photsbox">';
+      h += '<div class="phots-lbl">💭 HOTS · 批判性思维</div>';
+      h += '<div class="pq-stem">' + stripTags(q.stem) + '</div>';
+      if (q.prompts && q.prompts.length) {
+        h += '<ul class="phots-prompts">' + q.prompts.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>';
+      }
+      h += '</div>';
+      h += '<div class="pwrite-lines">';
+      for (var li = 0; li < 6; li++) h += '<div class="pwrite-line"></div>';
+      h += '</div>';
+    }
+
+    h += '</div>';
+    return h;
+  }
+
+  let qsHTML = '';
+  currentQs.forEach(function(q, i) { qsHTML += buildQHTML(q, i); });
+
+  const printHTML = '<!DOCTYPE html>\n<html lang="zh">\n<head>\n<meta charset="UTF-8">\n<title>试卷 ' + lesson.num + ' ' + tierLabel + '</title>\n<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">\n<style>\n* { box-sizing: border-box; margin: 0; padding: 0; }\nbody { font-family: "DM Sans", sans-serif; color: #1a1714; background: #fff; padding: 24px 32px; max-width: 780px; margin: 0 auto; }\n@media print { body { padding: 0; } }\n.header { border-bottom: 3px solid #1a1714; padding-bottom: 12px; margin-bottom: 16px; }\n.header h1 { font-size: 18px; font-weight: 700; font-family: "Noto Serif SC", serif; }\n.header .meta { font-size: 12px; color: #666; margin-top: 4px; }\n.student-row { display: flex; gap: 24px; margin-bottom: 20px; font-size: 13px; }\n.student-row .field { display: flex; align-items: center; gap: 6px; }\n.student-row .field-line { border-bottom: 1px solid #999; min-width: 120px; height: 20px; }\n.pq { margin-bottom: 24px; page-break-inside: avoid; }\n.pq-num { font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }\n.pq-type { font-weight: 400; color: #888; font-size: 11px; }\n.pq-stem { font-size: 15px; line-height: 1.65; margin-bottom: 10px; font-family: "Noto Serif SC", serif; }\n.ppassage { background: #e8f7f0; border-left: 4px solid #1f8c5a; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; font-family: "Noto Serif SC", serif; font-size: 14px; line-height: 1.8; }\n.ppassage-lbl { font-size: 10px; font-weight: 700; color: #1f8c5a; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }\n.popts { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 16px; margin-left: 2px; }\n.popt { font-size: 13px; font-family: "Noto Serif SC", serif; padding: 3px 0; display: flex; gap: 6px; }\n.popt-k { font-weight: 700; min-width: 16px; }\n.pline { border-bottom: 1.5px solid #aaa; margin: 14px 0 4px; min-height: 26px; }\n.pmatch { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }\n.pmatch-col { display: flex; flex-direction: column; gap: 6px; }\n.pmatch-hdr { font-size: 11px; font-weight: 700; color: #777; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }\n.pmatch-item { border: 1.5px solid #ddd; border-radius: 6px; padding: 7px 12px; font-size: 14px; font-family: "Noto Serif SC", serif; text-align: center; background: #f9f9f9; }\n.photsbox { background: #fffbea; border-left: 4px solid #c9a227; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; }\n.phots-lbl { font-size: 10px; font-weight: 700; color: #c9a227; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }\n.phots-prompts { margin: 8px 0 0 16px; font-size: 12px; color: #7a7570; }\n.phots-prompts li { margin-bottom: 4px; }\n.pwrite-lines { margin-top: 8px; }\n.pwrite-line { border-bottom: 1px solid #ccc; height: 30px; margin-bottom: 2px; }\n.footer { margin-top: 32px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }\n</style>\n</head>\n<body>\n<div class="header">\n  <h1>跨越丝路分层习题生成器 · 1B</h1>\n  <div class="meta">' + lesson.num + ' · ' + lesson.title + ' (' + lesson.cn + ') &nbsp;|&nbsp; ' + tierLabel + ' &nbsp;|&nbsp; 共 ' + currentQs.length + ' 题 &nbsp;|&nbsp; ' + date + '</div>\n</div>\n<div class="student-row">\n  <div class="field">姓名 Name: <div class="field-line"></div></div>\n  <div class="field">日期 Date: <div class="field-line"></div></div>\n  <div class="field">得分 Score: <div class="field-line"></div></div>\n</div>\n' + qsHTML + '\n<div class="footer"><span>跨越丝路分层习题生成器 · 1B</span><span>' + lesson.num + ' · ' + tierLabel + '</span><span>Across the Silk Route</span></div>\n</body>\n</html>';
+
+  const win = window.open('', '_blank', 'width=860,height=960');
+  if (!win) { alert('请允许弹出窗口后重试。\nPlease allow pop-ups and try again.'); return; }
+  win.document.write(printHTML);
+  win.document.close();
+  win.focus();
+  setTimeout(function() { win.print(); }, 900);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STUDENT INFO
+// ══════════════════════════════════════════════════════════════════
+let studentName = '', studentClass = '', studentSchool = '';
+
+function goToStudentInfo() {
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('studentInfoScreen').style.display = 'block';
+}
+
+function backToSetup() {
+  document.getElementById('studentInfoScreen').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+}
+
+function confirmStudentInfo() {
+  const name = document.getElementById('si_name').value.trim();
+  const cls  = document.getElementById('si_class').value.trim();
+  const sch  = document.getElementById('si_school').value.trim();
+  if (!name) {
+    document.getElementById('si_name').focus();
+    document.getElementById('si_name').style.borderColor = 'var(--wrong)';
+    setTimeout(()=>{ document.getElementById('si_name').style.borderColor=''; }, 1500);
+    return;
+  }
+  if (!cls) {
+    document.getElementById('si_class').focus();
+    document.getElementById('si_class').style.borderColor = 'var(--wrong)';
+    setTimeout(()=>{ document.getElementById('si_class').style.borderColor=''; }, 1500);
+    return;
+  }
+  studentName = name; studentClass = cls; studentSchool = sch;
+  document.getElementById('studentInfoScreen').style.display = 'none';
+  document.getElementById('soundToggleWrap').style.display = 'block';
+  startQuiz();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SOUND EFFECTS
+// ══════════════════════════════════════════════════════════════════
+let soundOn = true;
+
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById('soundBtn').textContent = soundOn ? '🔊 Sound ON' : '🔇 Sound OFF';
+}
+
+function playSound(type) {
+  if (!soundOn) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.12);
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.24);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.55);
+    } else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.setValueAtTime(180, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.14, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+    } else if (type === 'click') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'complete') {
+      const notes = [523,659,784,1047];
+      notes.forEach((f,idx) => {
+        const o2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.type = 'sine'; o2.frequency.value = f;
+        g2.gain.setValueAtTime(0.15, ctx.currentTime + idx*0.15);
+        g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx*0.15 + 0.25);
+        o2.start(ctx.currentTime + idx*0.15);
+        o2.stop(ctx.currentTime + idx*0.15 + 0.3);
+      });
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ANALYTICS — builds always-visible panel on result screen
+// ══════════════════════════════════════════════════════════════════
+function buildAnalyticsPanel() {
+  const panel = document.getElementById('analyticsPanel');
+  const lesson = LESSONS[selectedLesson];
+  const tierNames = ['Tier 1 · 迈向掌握','Tier 2 · 达到掌握','Tier 3 · 深度掌握'];
+  const total = currentQs.length;
+  const typeLabels = { mc:'MC 选择题', fill:'Fill 填空题', match:'Match 连线题', reading:'Reading 阅读题', hots:'HOTS 思维题' };
+
+  let wrongQs = [], correctCount = 0, typeStats = {};
+  currentQs.forEach((q, i) => {
+    const r = responses[i];
+    const isCorrect = r?.correct === true;
+    if (isCorrect) correctCount++;
+    else wrongQs.push({ q, i, r });
+    if (!typeStats[q.type]) typeStats[q.type] = { total:0, correct:0 };
+    typeStats[q.type].total++;
+    if (isCorrect) typeStats[q.type].correct++;
+  });
+
+  const pct = Math.round(correctCount/total*100);
+
+  let reviewHtml = '';
+  currentQs.forEach((q, i) => {
+    const r = responses[i];
+    const isCorrect = r?.correct === true;
+    const isOpen = q.type === 'hots';
+    const stemText = q.stem.replace(/<[^>]*>/g,'').slice(0,90) + (q.stem.replace(/<[^>]*>/g,'').length>90?'…':'');
+    let correctLabel = '', userLabel = '';
+    if (q.type==='mc'||q.type==='reading') {
+      const dc = q._choices||q.choices; const da = (q._ans!==undefined)?q._ans:q.ans;
+      correctLabel = `${['A','B','C','D'][da]}. ${dc[da]}`;
+      userLabel = r ? `${['A','B','C','D'][r.userIdx]}. ${r.userLabel}` : '— 未作答';
+    } else if (q.type==='fill') {
+      correctLabel = q.ans[0]; userLabel = r?.userText||'— 未作答';
+    } else if (q.type==='match') {
+      correctLabel = '全部正确配对'; userLabel = r?.correct?'✓ 全部正确':'✗ 部分错误';
+    } else if (q.type==='hots') {
+      correctLabel = '开放作答'; userLabel = r?.userText?'已提交 ✓':'— 未提交';
+    }
+    const iconClass = isOpen ? 'aq-open' : isCorrect ? 'aq-correct' : 'aq-wrong';
+    const iconChar = isOpen ? '💭' : isCorrect ? '✓' : '✗';
+    reviewHtml += `<div class="analytics-q-row">
+      <div class="analytics-q-icon ${iconClass}">${iconChar}</div>
+      <div class="analytics-q-body">
+        <div class="analytics-q-num">Q${i+1} · ${typeLabels[q.type]||q.type}</div>
+        <div class="analytics-q-stem">${stemText}</div>
+        <div class="analytics-q-ans">
+          <span class="aq-tag aq-right-tag">✓ ${correctLabel}</span>
+          <span class="aq-tag aq-user-tag ${isCorrect?'':'aq-wrong-tag'}">你的答案: ${userLabel}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  let strengthHtml = '';
+  Object.entries(typeStats).forEach(([type, stat]) => {
+    const pctT = Math.round(stat.correct/stat.total*100);
+    strengthHtml += `<div class="strength-bar">
+      <span class="strength-label">${typeLabels[type]||type}</span>
+      <div class="strength-track"><div class="strength-fill-${pctT>=60?'correct':'wrong'}" style="width:${pctT}%"></div></div>
+      <span style="font-size:12px;font-weight:700;color:${pctT>=60?'var(--correct)':'var(--wrong)'};min-width:36px">${pctT}%</span>
+    </div>`;
+  });
+
+  const strongTypes = Object.entries(typeStats).filter(([,s])=>s.correct/s.total>=0.7).map(([t])=>typeLabels[t]||t);
+  const weakTypes   = Object.entries(typeStats).filter(([,s])=>s.correct/s.total<0.5).map(([t])=>typeLabels[t]||t);
+  const studentLabel = studentName ? `<strong>${studentName}</strong>` : '你';
+  let insightText = `${studentLabel} 本次在 <strong>${lesson.num} · ${lesson.cn}</strong>（${tierNames[selectedTier]}）中得了 <strong>${correctCount}/${total}（${pct}%）</strong> 分。`;
+  if (strongTypes.length) insightText += ` 强项：${strongTypes.join('、')}。`;
+  if (weakTypes.length)   insightText += ` 需加强：<strong style="color:var(--wrong)">${weakTypes.join('、')}</strong>。建议重点复习错误题目，并完成下方的补弱练习。`;
+  else insightText += ' 整体表现良好，继续保持！';
+
+  let remedialHtml = '';
+  if (wrongQs.length > 0) {
+    const remedials = wrongQs.slice(0,4);
+    remedials.forEach(({q, i}, ri) => {
+      if (q.type === 'mc' || q.type === 'reading') {
+        const dc = q._choices||q.choices; const da = (q._ans!==undefined)?q._ans:q.ans;
+        const stemText = q.stem.replace(/<[^>]*>/g,'');
+        remedialHtml += `<div class="remedial-q" id="rq${ri}">
+          <div class="remedial-q-label">补弱 Q${ri+1} · 重练错题 Retry Wrong Answer — ${typeLabels[q.type]}</div>
+          <div class="remedial-q-stem">${stemText}</div>
+          <div class="remedial-choices">
+            ${dc.map((c,ci) => `<button class="remedial-choice" id="rqc${ri}_${ci}" onclick="checkRemedial(${ri},${ci},${da})">${['A','B','C','D'][ci]}. ${c}</button>`).join('')}
+          </div>
+        </div>`;
+      } else if (q.type === 'fill') {
+        const stemText = q.stem.replace(/<[^>]*>/g,'');
+        remedialHtml += `<div class="remedial-q" id="rq${ri}">
+          <div class="remedial-q-label">补弱 Q${ri+1} · 重练错题 Retry Wrong Answer — Fill-in 填空</div>
+          <div class="remedial-q-stem">${stemText}</div>
+          <div style="display:flex;gap:8px;flex-direction:column">
+            <input class="fill-input" id="rqinput${ri}" placeholder="Write your answer · 填写答案" style="font-size:16px;padding:11px 14px;" onkeydown="if(event.key==='Enter')checkRemedialFill(${ri})">
+            <button class="submit-btn" onclick="checkRemedialFill(${ri})">提交 Submit</button>
+          </div>
+          <div class="feedback" id="rqfb${ri}" style="margin-top:8px;"></div>
+        </div>`;
+      }
+    });
+  } else {
+    remedialHtml = `<p style="color:var(--correct);font-weight:600;font-size:15px;text-align:center;padding:1rem;">🎉 全部答对，无需补弱练习！All answers correct — no remedial needed!</p>`;
+  }
+
+  panel.innerHTML = `
+    <div class="analytics-section">
+      <div class="analytics-section-title">📋 学情总览 · Learning Analysis</div>
+      <p class="analytics-insight" style="margin-bottom:1rem;">${insightText}</p>
+      ${strengthHtml}
+    </div>
+    <div class="analytics-section">
+      <div class="analytics-section-title">📝 逐题回顾 · Question-by-Question Review</div>
+      ${reviewHtml}
+    </div>
+    <div class="analytics-section">
+      <div class="analytics-section-title">🔧 补弱练习 · Remedial Practice</div>
+      ${remedialHtml}
+    </div>`;
+}
+
+function checkRemedial(ri, chosen, correct) {
+  const btns = document.querySelectorAll(`[id^="rqc${ri}_"]`);
+  btns.forEach(b => b.disabled = true);
+  btns.forEach((b,ci) => {
+    if (ci === correct) b.classList.add('rc-correct');
+    else if (ci === chosen && chosen !== correct) b.classList.add('rc-wrong');
+  });
+  playSound(chosen === correct ? 'correct' : 'wrong');
+}
+
+function checkRemedialFill(ri) {
+  const wrongQ = currentQs.filter(q => { const r = responses[currentQs.indexOf(q)]; return r&&!r.correct; })[ri];
+  if (!wrongQ) return;
+  const val = document.getElementById(`rqinput${ri}`)?.value.trim() || '';
+  const correct = wrongQ.ans.some(a => val.toLowerCase() === a.toLowerCase());
+  const fb = document.getElementById(`rqfb${ri}`);
+  if (fb) { fb.className='feedback show '+(correct?'ok':'bad'); fb.textContent = correct ? '✓ 正确！Correct!' : `✗ 正确答案: ${wrongQ.ans[0]}`; }
+  document.getElementById(`rqinput${ri}`).disabled = true;
+  playSound(correct ? 'correct' : 'wrong');
+}
+
+function downloadRemedial() {
+  const lesson = LESSONS[selectedLesson];
+  const tierNames = ['Tier 1 · 迈向掌握','Tier 2 · 达到掌握','Tier 3 · 深度掌握'];
+  let txt = `跨越丝路 · 补弱练习 Remedial Practice\n`;
+  txt += `${'='.repeat(50)}\n`;
+  txt += `学生 Student: ${studentName||'—'}  班级 Class: ${studentClass||'—'}  学校: ${studentSchool||'—'}\n`;
+  txt += `课时 Lesson: ${lesson.num} · ${lesson.cn}  |  Tier: ${tierNames[selectedTier]}\n`;
+  txt += `日期 Date: ${new Date().toLocaleString()}\n`;
+  txt += `${'='.repeat(50)}\n\n`;
+  txt += `以下是你做错的题目，请再次练习：\nThe following questions were answered incorrectly. Please retry:\n\n`;
+  let wrongCount = 0;
+  currentQs.forEach((q, i) => {
+    const r = responses[i];
+    if (!r || r.correct) return;
+    wrongCount++;
+    const stem = q.stem.replace(/<[^>]*>/g,'');
+    txt += `补弱Q${wrongCount} [${q.type}]\n问题: ${stem}\n`;
+    if (q.type==='mc'||q.type==='reading') {
+      const dc=q._choices||q.choices; const da=(q._ans!==undefined)?q._ans:q.ans;
+      ['A','B','C','D'].forEach((k,ci)=>{ if(dc[ci]) txt+=`  ${k}. ${dc[ci]}\n`; });
+      txt += `正确答案: ${['A','B','C','D'][da]}. ${dc[da]}\n`;
+      txt += `你的答案: ${['A','B','C','D'][r.userIdx]}. ${r.userLabel} ✗\n`;
+    } else if (q.type==='fill') {
+      txt += `正确答案: ${q.ans[0]}\n你的答案: ${r.userText||'—'} ✗\n`;
+    } else if (q.type==='match') {
+      txt += `正确配对: ${q.left.map((l,j)=>`${l}→${q.right[q.pairs[j][1]]}`).join(' | ')}\n`;
+    }
+    txt += '\n';
+  });
+  if (wrongCount === 0) txt += '🎉 全部正确！No remedial questions needed.\n';
+  const blob = new Blob([txt], { type:'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`补弱_${studentName||'student'}_${lesson.id}_Tier${selectedTier+1}.txt`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STUDENT SURVEY
+// ══════════════════════════════════════════════════════════════════
+const surveyData = {};
+
+function toggleSurveyBody() {
+  const body = document.getElementById('surveyBody');
+  const arrow = document.getElementById('surveyArrow');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function selectSingle(qId, el) {
+  document.querySelectorAll(`#${qId} .survey-option`).forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  surveyData[qId] = el.textContent.trim();
+}
+
+function selectScale(qId, val) {
+  document.querySelectorAll(`#${qId} .survey-scale-btn`).forEach((b,i) => b.classList.toggle('selected', i+1===val));
+  surveyData[qId] = val;
+}
+
+function submitStudentSurvey() {
+  const required = ['sq1','sq2','sq3','sq4','sq5','sq6'];
+  const missing = required.filter(k => !surveyData[k]);
+  if (missing.length) {
+    const firstEl = document.getElementById(missing[0]);
+    firstEl.scrollIntoView({ behavior:'smooth', block:'center' });
+    firstEl.style.outline = '2px solid var(--wrong)';
+    setTimeout(()=>{ firstEl.style.outline=''; }, 1800);
+    alert('请完成所有必填项（带 * 号）后再提交。\nPlease answer all required questions (*) before submitting.');
+    return;
+  }
+  const suggestions = document.getElementById('survey_suggestions')?.value?.trim() || '';
+  const payload = {
+    type: '学生问卷 Student Survey',
+    student: studentName, class: studentClass, school: studentSchool,
+    lesson: LESSONS[selectedLesson]?.num + ' ' + LESSONS[selectedLesson]?.cn,
+    tier: ['Tier1','Tier2','Tier3'][selectedTier],
+    score: `${score}/${currentQs.length}`,
+    q1_overall: surveyData['sq1'],
+    q2_targeted: surveyData['sq2'],
+    q3_hsk_help: surveyData['sq3'],
+    q4_key_points: surveyData['sq4'],
+    q5_least_fav: surveyData['sq5'],
+    q6_most_fav: surveyData['sq6'],
+    suggestions: suggestions || '（无）',
+    submitted_at: new Date().toLocaleString()
+  };
+  const btn = document.querySelector('.survey-submit-btn');
+  btn.disabled = true; btn.textContent = '提交中… Submitting…';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9odViSPuKM6OQSYQa3VrhsLf0EUMHVo-y1B_89yhqpV-1BwFFf1v-aS6P2r3BfLZWPA/exec';
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(() => {
+    document.getElementById('surveyForm_submit').style.display = 'none';
+    document.getElementById('surveyThanks').style.display = 'block';
+  }).catch(() => {
+    try {
+      const existing = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
+      existing.push(payload);
+      localStorage.setItem('surveyResponses', JSON.stringify(existing));
+    } catch(e) {}
+    btn.disabled = false; btn.textContent = '提交反馈 Submit Feedback 📤';
+    alert('网络错误，请稍后再试。Network error — please try again later.');
+  });
+}
+
+buildSetup();
+</script>
+</body>
+</html>
